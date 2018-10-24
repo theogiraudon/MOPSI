@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as nl
-import scipy
+import scipy.integrate
 np.set_printoptions(precision=4) # pour joli affichage des matrices
 
 #--------------------------------
@@ -95,3 +95,4 @@ def solution_analytique(x):
     
 Y_analytique = [-solution_analytique(x) for x in X]
 plt.plot(X,Y_analytique,color='r')
+plt.show()
