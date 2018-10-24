@@ -11,7 +11,7 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.;
-N=5;
+N=20;
 
 def x(i):
     return i*R/N
@@ -65,7 +65,7 @@ U = np.dot(nl.inv(A),B)
 def solution_approchee(y):
     s=0
     for i in range(N-1):
-        s+=U[i]*phi(i,y)
+        s+=U[i]*phi(i+1,y)
     return s    
 
 #--------------------------------------------------------------------------
@@ -95,4 +95,3 @@ def solution_analytique(x):
     
 Y_analytique = [-solution_analytique(x) for x in X]
 plt.plot(X,Y_analytique,color='r')
-    
