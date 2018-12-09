@@ -8,7 +8,6 @@ Created on Thu Nov  8 14:44:31 2018
 #---- importations de librairies ------
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.linalg as nl
 import scipy.integrate
 from scipy.sparse.linalg import spsolve
 from scipy import sparse
@@ -21,8 +20,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.;
-N_x=150;
-N_y=150;
+N_x=30;
+N_y=30;
 
 
 
@@ -180,7 +179,7 @@ for i in range(0,N_x):
             result_h=scipy.integrate.quad(h,t_y(j),t_y(j+2), epsrel = 1e-16)[0]       
         F[K(i,j)]=result_g*result_h
         
-        
+
 #---Assemblage de B
 for i in range(0,N_x):
     for j in range(0,N_y):
@@ -188,12 +187,11 @@ for i in range(0,N_x):
             for l in range(0,N_y):
                 B[K(i,j),K(k,l)] = sum([C[m][i,k]*D[m][j,l] for m in range(4)])
 
-#B = sparse(B)
-
+B = sparse.csr_matrix(B)
 
 #-- Résolution du système linéaire --
-U = nl.solve(B,F)
-#U = spsolve(B,F)
+
+U = spsolve(B,F)
 
 def solution_approchee(x,y):
     s=0
