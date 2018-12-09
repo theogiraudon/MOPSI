@@ -23,24 +23,65 @@ def a(x):
     return a_per(np.log(x))    
     
 def f(x):
-    return 1.
+    return 1.    
     
-#---- fonctions chapeaux--------
+def coef_spline_phi(i, side):
+    if side=='l':        
+        M = [[x(i)**3,x(i)**2,x(i),1],
+             [3*x(i)**2,2*x(i),1,0],
+              [x(i-1)**3,x(i-1)**2,x(i-1),1],
+               [3*x(i-1)**2,2*x(i-1),1,0]]
+        B = [1,0,0,0]
+    elif side=='r':
+        M = [[x(i+1)**3,x(i+1)**2,x(i+1),1],
+             [3*x(i+1)**2,2*x(i+1),1,0],
+              [x(i)**3,x(i)**2,x(i),1],
+               [3*x(i)**2,2*x(i),1,0]]
+        B = [0,0,1,0]
+    return nl.solve(M,B)
+    
+def coef_spline_psi(i):
+    M = [[x(i)**3,x(i)**2,x(i),1],
+             [3*x(i)**2,2*x(i),1,0],
+              [x(i-1)**3,x(i-1)**2,x(i-1),1],
+               [3*x(i-1)**2,2*x(i-1),1,0]]
+    B = [0,1,0,0]
+    return nl.solve(M,B)
+       
+#---- fonctions spline--------
 def phi(i,y):
     if y<x(i+1) and y>=x(i):
-        return (x(i+1)-y)/(x(i+1)-x(i))
+        coef = coef_spline_phi(i,'r')
+        return y**3*coef[0]+y**2*coef[1]+y*coef[2]+coef[3]
     elif y<x(i) and y>=x(i-1):
-        return (y-x(i-1))/(x(i)-x(i-1))
+        coef = coef_spline_phi(i,'l')
+        return y**3*coef[0]+y**2*coef[1]+y*coef[2]+coef[3]
     else:
         return 0                        
         
 def phi_prime(i,y):
     if y<x(i+1) and y>=x(i):
-        return -1/(x(i+1)-x(i))
+        coef = coef_spline_phi(i,'r')
+        return 2*y**2*coef[0]+y*coef[1]+coef[2]
     elif y<x(i) and y>=x(i-1):
-        return 1/(x(i)-x(i-1))
+        coef = coef_spline_phi(i,'l')
+        return 2*y**2*coef[0]+y*coef[1]+coef[2]
     else:
         return 0 
+        
+def psi(i,y):
+    if y<x(i) and y>=x(i-1):
+        coef = coef_spline_psi(i)
+        return y**3*coef[0]+y**2*coef[1]+y*coef[2]+coef[3]
+    else:
+        return 0
+        
+def psi_prime(i,y):
+    if y<x(i) and y>=x(i-1):
+        coef = coef_spline_psi(i)
+        return 2*y**2*coef[0]+y*coef[1]+coef[2]
+    else:
+        return 0
     
 #--------------------------------------------------------------------------
 
@@ -48,14 +89,14 @@ A = np.zeros((N-1,N-1))
 
 for i in range(1,N):
     for j in range(1,N):
-        h = lambda y : a(y)*phi_prime(i,y)*phi_prime(j,y)
+        h = lambda y : a(y)*(phi_prime(i,y)*phi_prime(j,y)+psi_prime(i,y)*psi_prime(j,y))
         result_h=scipy.integrate.quad(h,x(i-1),x(i+1))
         A[i-1][j-1]=result_h[0]
 
 B = np.zeros((N-1,1))
     
 for i in range(1,N):
-    g = lambda y : phi(i,y)*f(y)
+    g = lambda y : (phi(i,y)+psi(i,y))*f(y)
     result_g=scipy.integrate.quad(g,x(i-1),x(i+1))
     B[i-1]=result_g[0]
 
