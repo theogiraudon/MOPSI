@@ -17,7 +17,7 @@ def x(i):
     return i*R/N
 
 def a_per(x):
-    return 1+np.sin(x)**2
+    return 1+np.sin(2*np.pi*x)**2
     
 def a(x):
     return a_per(np.log(x))    
