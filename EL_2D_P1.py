@@ -232,7 +232,7 @@ def approximate_U_derivative(x, y, U, N_x, N_y, R=1.):
     return s
 
 
-#------------------------- Solution analytique ------------------------
+#------------------------- Compute analytical solution ------------------------
 
 #inv_a = lambda x : 1.0/a(x)
 #g = lambda t : inv_a(t)*(scipy.integrate.quad(f,1,t, epsrel = 1e-14)[0])
@@ -299,50 +299,76 @@ for i in range(0,N_x+2):
 
 
 #---------------- Show function and derivative graphs -----------------
-
+'''
 nbPoints = 1000
 
 X = np.linspace(0, 1, nbPoints)
 
 U = assemble_U(N_x, N_y, R)
 
-Y_analytic = np.linspace(0, 1, nbPoints)
-Y_analytic[1:] = [solution_analytique(x) for x in X[1:]]
-Y_analytic[0] = Y_analytic[1] # The derivative is undefined in 0
+Y_analytical = np.linspace(0, 1, nbPoints)
+Y_analytical[1:] = [solution_analytique(x) for x in X[1:]]
+Y_analytical[0] = Y_analytical[1] # The derivative is undefined in 0
 
 Y_approximate = np.linspace(0, 1, nbPoints)
 Y_approximate[0] = 0
 Y_approximate[1:] = [approximate_U(x, np.log(x), U, N_x, N_y) for x in X[1:]]
 
-Y_analytic_derivative = np.linspace(0, 1, nbPoints)
-Y_analytic_derivative[1:] = [deriv_analytique(x) for x in X[1:]]
-Y_analytic_derivative[0] = Y_analytic_derivative[1] # The derivative is undefined in 0
+Y_analytical_derivative = np.linspace(0, 1, nbPoints)
+Y_analytical_derivative[1:] = [deriv_analytique(x) for x in X[1:]]
+Y_analytical_derivative[0] = Y_analytical_derivative[1] # The derivative is undefined in 0
 
 Y_approximate_derivative = np.linspace(0, 1, nbPoints)
 Y_approximate_derivative[0] = 0
 Y_approximate_derivative[1:] = [approximate_U_derivative(x, np.log(x), U, N_x, N_y) for x in X[1:]]
 
 fig = plt.figure()
-plt.plot(X, Y_analytic, color='r')
+plt.plot(X, Y_analytical, color='r')
 plt.xlabel('x')
 plt.plot(X, Y_approximate, color='b')
 
-fig = plt.figure()
-plt.plot(X, Y_analytic_derivative, color='r')
+fig2 = plt.figure()
+plt.plot(X, Y_analytical_derivative, color='r')
 plt.xlabel('x')
 plt.plot(X, Y_approximate_derivative, color='b')
 
 plt.show()
-
+'''
 
 #--------------------- L^2 Error computation --------------------------
 
-def L_2_norm(f, a=0, b=1, epsrel=1.49e-08):
+def L_2_norm(f, nb_points=1000, a=0, b=1):
     '''
        Return the approximate L^2 norm of f restricted to (inf, sup) using
        nb_points points in the range.
     '''
-    f_squared = lambda x : f(x)**2    # f(x) is real
-    return scipy.integrate.quad(f_squared, a, b, epsrel=epsrel)[0]**(1/2)
+    X = [i/(nb_points + 1) for i in range(1, nb_points)]
+    Y = [f(x) for x in X]
+    Y = [y*y for y in Y]
+    # f_squared = lambda x : f(x)**2    # f(x) is real
+    # return scipy.integrate.quad(f_squared, a, b)[0]**(1/2)
+    return (np.trapz(Y, X))**(1/2)
 
+X = [i*10 for i in range(1, 8)]
+error_u_list = []
+error_u_derivative_list = []
 
+for N in X:
+    print("N = ", N)
+    U = assemble_U(N, N, R)
+    error_u = lambda x : (approximate_U(x, np.log(x), U, N, N) - solution_analytique(x))
+    error_u_derivative = lambda x : (approximate_U_derivative(x, np.log(x), U, N, N) - deriv_analytique(x))
+    error_u_list.append(L_2_norm(error_u, 1000))
+    error_u_derivative_list.append(L_2_norm(error_u_derivative, 1000))
+
+fig_3 = plt.figure()
+plt.plot(X, error_u_list, color='g')
+fig_3.suptitle('L^2 solution error')
+plt.xlabel('N_x, N_y')
+
+fig_4 = plt.figure()
+plt.plot(X, error_u_derivative_list, color='r')
+fig_4.suptitle('L^2 derivative error')
+plt.xlabel('N_x, N_y')
+
+plt.show()
