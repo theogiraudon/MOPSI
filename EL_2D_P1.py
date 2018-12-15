@@ -20,8 +20,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.;
-N_x=20;
-N_y=20;
+N_x=50;
+N_y=50;
 
 
 def t_x(i, N_x, R=1.):
@@ -34,8 +34,6 @@ def a_per(y):
     return 1+np.sin(math.pi*y)**2
     
 def a(x):
-    if x <= 0:
-        print("Invalid x value : ", x)
     return a_per(np.log(x))    
     
 def f(x):
@@ -89,7 +87,7 @@ def psi_prime(j, y, N_y, R=1.):
         if y< t_y(1, N_y, R):
             return -1/(t_y(1, N_y, R) - t_y(0, N_y, R))
         elif y>= t_y(N_y - 1, N_y, R):
-            return 1/(t_y(i, N_y, R) - t_y(i - 1, N_y, R))
+            return 1/(t_y(j, N_y, R) - t_y(j - 1, N_y, R))
         else:
             return 0
 
@@ -234,16 +232,7 @@ def approximate_U_derivative(x, y, U, N_x, N_y, R=1.):
     return s
 
 
-#--------------------------------------------------------------------------
-  
-    
-fig = plt.figure()
-
-nbPoints = 1000
-
-X = np.linspace(0, 1, nbPoints)
-
-#---Solution analytique------------------------
+#------------------------- Solution analytique ------------------------
 
 #inv_a = lambda x : 1.0/a(x)
 #g = lambda t : inv_a(t)*(scipy.integrate.quad(f,1,t, epsrel = 1e-14)[0])
@@ -253,44 +242,48 @@ X = np.linspace(0, 1, nbPoints)
 
 inv_a = lambda x : 1.0/a(x)
 inv_aper = lambda y : 1.0/a_per(y)
-g = lambda t : inv_a(t)*t
+g = lambda t : inv_a(t) * scipy.integrate.quad(f, t, 1)[0]
+# g = lambda t : inv_a(t)*t
 
-g1 = lambda t : np.exp(2*t)/a_per(t)
-g2 = lambda t : np.exp(t)/a_per(t)
+# g1 = lambda t : np.exp(2*t)/a_per(t)
+# g2 = lambda t : np.exp(t)/a_per(t)
 
-N = 400000
-xvec = np.linspace(-40,0,N)
-g1vec = g1(xvec)
-g2vec = g2(xvec)
+# N = 400000
+# xvec = np.linspace(-40,0,N)
+# g1vec = g1(xvec)
+# g2vec = g2(xvec)
 
-u3 = scipy.integrate.trapz(g1vec,xvec)
-u3 /= scipy.integrate.trapz(g2vec,xvec)
+# u3 = scipy.integrate.trapz(g1vec,xvec)
+# u3 /= scipy.integrate.trapz(g2vec,xvec)
 
-print("u3 = ", u3)
+# print("u3 = ", u3)
 
-u2 = scipy.integrate.quad(g1,-40,0, epsrel = 1e-14)[0]  
-u2 /= scipy.integrate.quad(g2,-40,0, epsrel = 1e-14)[0]  
+# u2 = scipy.integrate.quad(g1,-40,0, epsrel = 1e-14)[0]
+# u2 /= scipy.integrate.quad(g2,-40,0, epsrel = 1e-14)[0]
 
-print("u2 = ", u2)
+# print("u2 = ", u2)
 
 u1 = scipy.integrate.quad(g,0,1, epsrel = 1e-14)[0]
-u1 /= -scipy.integrate.quad(inv_a,0,1, epsrel = 1e-14)[0]
+u1 /= -(a_per(0) * scipy.integrate.quad(inv_a,0,1, epsrel = 1e-14)[0])    # u1 = u'(1)
 
-print("u1 = ", u1)
+# print("u1 = ", u1)
 
 
 def solution_analytique(x):
-    integral1 = scipy.integrate.quad(g,1,x, epsrel = 1e-14)
-    integral2 = scipy.integrate.quad(inv_a,1,x, epsrel = 1e-14)
-    return integral1[0] + u1*integral2[0]
+    integral1 = scipy.integrate.quad(g, 1, x, epsrel = 1e-14)
+    integral2 = scipy.integrate.quad(inv_a, 1, x, epsrel = 1e-14)
+    return integral1[0] + a_per(0) * u1 * integral2[0]
 
 def deriv_analytique(x):
-    return (x-u3)/a(x)
+    return g(x) + a_per(0) * u1 * inv_a(x)
+
+#def deriv_analytique(x):
+    #return (x-u3) / a(x)
+
 
 #Y_analytique = [-solution_analytique(x) for x in X]
-Y_analytique = [-deriv_analytique(x) for x in X]
 
-plt.plot(X,Y_analytique,color='r')
+#plt.plot(X,Y_analytique,color='r')
 #plt.show()
 
 '''
@@ -306,18 +299,38 @@ for i in range(0,N_x+2):
 
 
 #---------------- Show function and derivative graphs -----------------
-'''
-U = assemble_U(N_x, N_y, R)
-Y_2 = np.linspace(0,1,nbPoints)
-Y_2[0] = 0
-#Y[1:] = [solution_approchee(x, np.log(x)) for x in X[1:]]
-Y_2[1:] = [approximate_U_derivative(x, np.log(x), U, N_x, N_y) for x in X[1:]]
 
+nbPoints = 1000
+
+X = np.linspace(0, 1, nbPoints)
+
+U = assemble_U(N_x, N_y, R)
+
+Y_analytic = np.linspace(0, 1, nbPoints)
+Y_analytic[1:] = [solution_analytique(x) for x in X[1:]]
+Y_analytic[0] = Y_analytic[1] # The derivative is undefined in 0
+
+Y_approximate = np.linspace(0, 1, nbPoints)
+Y_approximate[0] = 0
+Y_approximate[1:] = [approximate_U(x, np.log(x), U, N_x, N_y) for x in X[1:]]
+
+Y_analytic_derivative = np.linspace(0, 1, nbPoints)
+Y_analytic_derivative[1:] = [deriv_analytique(x) for x in X[1:]]
+Y_analytic_derivative[0] = Y_analytic_derivative[1] # The derivative is undefined in 0
+
+Y_approximate_derivative = np.linspace(0, 1, nbPoints)
+Y_approximate_derivative[0] = 0
+Y_approximate_derivative[1:] = [approximate_U_derivative(x, np.log(x), U, N_x, N_y) for x in X[1:]]
 
 fig = plt.figure()
-plt.plot(X,Y_analytique,color='r')
+plt.plot(X, Y_analytic, color='r')
 plt.xlabel('x')
-plt.plot(X, Y_2, color='g')'''
+plt.plot(X, Y_approximate, color='b')
+
+fig = plt.figure()
+plt.plot(X, Y_analytic_derivative, color='r')
+plt.xlabel('x')
+plt.plot(X, Y_approximate_derivative, color='b')
 
 plt.show()
 
