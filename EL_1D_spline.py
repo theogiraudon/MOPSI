@@ -17,7 +17,7 @@ def x(i):
     return i*R/N
 
 def a_per(x):
-    return 1+np.sin(np.pi*x)**2
+    return 1+np.sin(2*np.pi*x)**2
     
 def a(x):
     return a_per(np.log(x))    
@@ -25,34 +25,27 @@ def a(x):
 def f(x):
     return 1.    
     
-    
-def coef_spline_phi(i, side):
-    if side=='l':        
-        M = [[x(i)**3,x(i)**2,x(i),1],
+def spline_matrix(i):
+    Mat = [[x(i)**3,x(i)**2,x(i),1],
              [3*x(i)**2,2*x(i),1,0],
               [x(i-1)**3,x(i-1)**2,x(i-1),1],
                [3*x(i-1)**2,2*x(i-1),1,0]]
+    return Mat
+def coef_spline_phi(i, side):
+    if side=='l':        
+        M = spline_matrix(i)
         B = [1,0,0,0]
     elif side=='r':
-        M = [[x(i+1)**3,x(i+1)**2,x(i+1),1],
-             [3*x(i+1)**2,2*x(i+1),1,0],
-              [x(i)**3,x(i)**2,x(i),1],
-               [3*x(i)**2,2*x(i),1,0]]
+        M = spline_matrix(i+1)
         B = [0,0,1,0]
     return nl.solve(M,B)
     
 def coef_spline_psi(i, side):
     if side=='l':
-        M = [[x(i)**3,x(i)**2,x(i),1],
-                 [3*x(i)**2,2*x(i),1,0],
-                  [x(i-1)**3,x(i-1)**2,x(i-1),1],
-                   [3*x(i-1)**2,2*x(i-1),1,0]]
+        M = spline_matrix(i)
         B = [0,0,0,1]
     elif side=='r':
-        M = [[x(i+1)**3,x(i+1)**2,x(i+1),1],
-             [3*x(i+1)**2,2*x(i+1),1,0],
-              [x(i)**3,x(i)**2,x(i),1],
-               [3*x(i)**2,2*x(i),1,0]]
+        M = spline_matrix(i+1)
         B = [0,1,0,0]
     return nl.solve(M,B)
        
@@ -134,6 +127,7 @@ for i in range(1,N+1):
 
 #-- Résolution du système linéaire --
 U = np.dot(nl.inv(A),B)
+
 
 def solution_approchee(y):
     s=0
