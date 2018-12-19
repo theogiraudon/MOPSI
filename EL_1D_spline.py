@@ -11,19 +11,20 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.;
-N=20;
+N=10;
 
 def x(i):
     return i*R/N
 
 def a_per(x):
-    return 1+np.sin(2*np.pi*x)**2
+    return 1+np.sin(np.pi*x)**2
     
 def a(x):
     return a_per(np.log(x))    
     
 def f(x):
     return 1.    
+    
     
 def coef_spline_phi(i, side):
     if side=='l':        
@@ -40,12 +41,19 @@ def coef_spline_phi(i, side):
         B = [0,0,1,0]
     return nl.solve(M,B)
     
-def coef_spline_psi(i):
-    M = [[x(i)**3,x(i)**2,x(i),1],
-             [3*x(i)**2,2*x(i),1,0],
-              [x(i-1)**3,x(i-1)**2,x(i-1),1],
-               [3*x(i-1)**2,2*x(i-1),1,0]]
-    B = [0,1,0,0]
+def coef_spline_psi(i, side):
+    if side=='l':
+        M = [[x(i)**3,x(i)**2,x(i),1],
+                 [3*x(i)**2,2*x(i),1,0],
+                  [x(i-1)**3,x(i-1)**2,x(i-1),1],
+                   [3*x(i-1)**2,2*x(i-1),1,0]]
+        B = [0,0,0,1]
+    elif side=='r':
+        M = [[x(i+1)**3,x(i+1)**2,x(i+1),1],
+             [3*x(i+1)**2,2*x(i+1),1,0],
+              [x(i)**3,x(i)**2,x(i),1],
+               [3*x(i)**2,2*x(i),1,0]]
+        B = [0,1,0,0]
     return nl.solve(M,B)
        
 #---- fonctions spline--------
@@ -70,50 +78,75 @@ def phi_prime(i,y):
         return 0 
         
 def psi(i,y):
-    if y<x(i) and y>=x(i-1):
-        coef = coef_spline_psi(i)
+    if y<x(i+1) and y>=x(i):
+        coef = coef_spline_psi(i,'r')
+        return y**3*coef[0]+y**2*coef[1]+y*coef[2]+coef[3]
+    elif y<x(i) and y>=x(i-1):
+        coef = coef_spline_psi(i,'l')
         return y**3*coef[0]+y**2*coef[1]+y*coef[2]+coef[3]
     else:
         return 0
         
 def psi_prime(i,y):
-    if y<x(i) and y>=x(i-1):
-        coef = coef_spline_psi(i)
+    if y<x(i+1) and y>=x(i):
+        coef = coef_spline_psi(i,'r')
+        return 2*y**2*coef[0]+y*coef[1]+coef[2]
+    elif y<x(i) and y>=x(i-1):
+        coef = coef_spline_psi(i,'l')
         return 2*y**2*coef[0]+y*coef[1]+coef[2]
     else:
         return 0
     
 #--------------------------------------------------------------------------
 
-A = np.zeros((N-1,N-1))
+A = np.zeros((2*N,2*N))
 
-for i in range(1,N):
-    for j in range(1,N):
-        h = lambda y : a(y)*(phi_prime(i,y)*phi_prime(j,y)+psi_prime(i,y)*psi_prime(j,y))
-        result_h=scipy.integrate.quad(h,x(i-1),x(i+1))
-        A[i-1][j-1]=result_h[0]
+for i in range(1,N+1):
+    for j in range(1,N+1):
+        h = lambda y : a(y)*phi_prime(i,y)*phi_prime(j,y)
+        A[i-1][j-1]=scipy.integrate.quad(h,x(i-1),x(i+1))[0]
 
-B = np.zeros((N-1,1))
+for i in range(1,N+1):
+    for j in range(1,N+1):
+        h = lambda y : a(y)*phi_prime(i,y)*psi_prime(j,y)
+        A[i-1][N+j-1]=scipy.integrate.quad(h,x(i-1),x(i+1))[0]
+        
+for i in range(1,N+1):
+    for j in range(1,N+1):
+        h = lambda y : a(y)*psi_prime(i,y)*phi_prime(j,y)
+        A[N+i-1][j-1]=scipy.integrate.quad(h,x(i-1),x(i+1))[0]
+        
+for i in range(1,N+1):
+    for j in range(1,N+1):
+        h = lambda y : a(y)*psi_prime(i,y)*psi_prime(j,y)
+        A[N+i-1][N+j-1]=scipy.integrate.quad(h,x(i-1),x(i+1))[0]
+
+
+B = np.zeros((2*N,1))
     
-for i in range(1,N):
-    g = lambda y : (phi(i,y)+psi(i,y))*f(y)
-    result_g=scipy.integrate.quad(g,x(i-1),x(i+1))
-    B[i-1]=result_g[0]
+for i in range(1,N+1):
+    g = lambda y : phi(i,y)*f(y)
+    B[i-1]=scipy.integrate.quad(g,x(i-1),x(i+1))[0]
+    
+for i in range(1,N+1):
+    g = lambda y : psi(i,y)*f(y)
+    B[N+i-1]=scipy.integrate.quad(g,x(i-1),x(i+1))[0]
 
 #-- Résolution du système linéaire --
 U = np.dot(nl.inv(A),B)
 
 def solution_approchee(y):
     s=0
-    for i in range(N-1):
-        s+=U[i]*phi(i+1,y)
+    for i in range(1,N+1):
+        s+=U[i-1]*phi(i,y)
+        s+=U[N+i-1]*psi(i,y)
     return s    
 
 #--------------------------------------------------------------------------
 
 fig = plt.figure()
 
-X = np.linspace(0,1,N)
+X = np.linspace(0,1,10000)
 Y = []
 
 for elt in X:
