@@ -20,8 +20,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.;
-N_x=50;
-N_y=50;
+N_x=60;
+N_y=60;
 
 
 def t_x(i, N_x, R=1.):
@@ -31,8 +31,10 @@ def t_y(j, N_y, R=1.):
     return j*R/N_y
     
 def a_per(y):
-    return 1+np.sin(math.pi*y)**2
-    
+    #return 1+np.sin(math.pi*y)**2
+    return 2 + np.cos(2*math.pi*y)
+    #return 1
+
 def a(x):
     return a_per(np.log(x))    
     
@@ -43,7 +45,7 @@ def K(i, j, N_y):
     return i*N_y + j
 
 #---- fonctions chapeaux--------
-def phi(i, x, N_x, R=1.):
+def phi(i, x, N_x, R=1.):    # Defines phi_0 to phi_{N_x - 1}
     if x< t_x(i + 2, N_x, R) and x>= t_x(i + 1, N_x, R):
         return (t_x(i + 2, N_x, R) - x) / (t_x(i + 2, N_x, R) - t_x(i + 1, N_x, R))
     elif x< t_x(i + 1, N_x, R) and x>= t_x(i, N_x, R):
@@ -51,7 +53,7 @@ def phi(i, x, N_x, R=1.):
     else:
         return 0                        
         
-def phi_prime(i, x, N_x, R=1.):
+def phi_prime(i, x, N_x, R=1.):    # Defines phi'_0 to phi'_{N_x - 1}
     if x< t_x(i + 2, N_x, R) and x>= t_x(i + 1, N_x, R):
         return -1./(t_x(i + 2, N_x, R) - t_x(i + 1, N_x, R))
     elif x< t_x(i + 1, N_x, R) and x>= t_x(i, N_x, R):
@@ -59,7 +61,7 @@ def phi_prime(i, x, N_x, R=1.):
     else:
         return 0 
 
-def psi(j, y, N_y, R=1.):
+def psi(j, y, N_y, R=1.):    # Defines psi_0 to psi_{N_y - 1}
     if j < (N_y-1):
         if y< t_y(j + 2, N_y, R) and y>= t_y(j + 1, N_y, R):
             return (t_y(j + 2, N_y, R) - y) / (t_y(j + 2, N_y, R) - t_y(j + 1, N_y, R))
@@ -75,7 +77,7 @@ def psi(j, y, N_y, R=1.):
         else:
             return 0
 
-def psi_prime(j, y, N_y, R=1.):
+def psi_prime(j, y, N_y, R=1.):    # Defines psi'_0 to psi'_{N_y - 1}
     if j < (N_y-1):
         if y< t_y(j + 2, N_y, R) and y>= t_y(j + 1, N_y, R):
             return -1./(t_y(j + 2, N_y, R) - t_y(j + 1, N_y, R))
@@ -90,6 +92,15 @@ def psi_prime(j, y, N_y, R=1.):
             return 1/(t_y(j, N_y, R) - t_y(j - 1, N_y, R))
         else:
             return 0
+
+'''
+X = np.linspace(0, 1, 5000)
+Y = [[psi(k, x, N_y) for x in X] for k in range(N_y)]
+for k in range(N_y):
+    plt.plot(X, Y[k])
+plt.show()
+print("hello")
+'''
 
 #------------------- Solution approximation -------------------------
 
@@ -119,7 +130,7 @@ def assemble_C(N_x, R=1.):
 
     for i in range(0, N_x):
         for k in range(0, N_x):
-            h = lambda x: (1 / x ** 2) * phi(i, x, N_x, R) * phi(k, x, N_x, R)
+            h = lambda x: (1 / x**2) * phi(i, x, N_x, R) * phi(k, x, N_x, R)
             result_h = scipy.integrate.quad(h, t_x(i, N_x, R), t_x(i + 2, N_x, R), epsrel=1e-16)
             C[3][i][k] = result_h[0]
     return C
@@ -214,7 +225,7 @@ def assemble_U(N_x, N_y, R=1.):
 def approximate_U(x, y, U, N_x, N_y, R=1.):
     s=0
     # Périodicité en y
-    y = abs(y) - np.floor(abs(y))
+    y = y - np.floor(y)
     for i in range(0, N_x):
         for j in range(0, N_y):
             s += U[K(i, j, N_y)] * phi(i, x, N_x, R) * psi(j, y, N_y, R)
@@ -223,7 +234,7 @@ def approximate_U(x, y, U, N_x, N_y, R=1.):
 def approximate_U_derivative(x, y, U, N_x, N_y, R=1.):
     s=0
     # Périodicité en y
-    y = abs(y) - np.floor(abs(y))
+    y = y - np.floor(y)
     for i in range(0, N_x):
         for j in range(0, N_y):
             s += (U[K(i, j, N_y)]
@@ -233,6 +244,7 @@ def approximate_U_derivative(x, y, U, N_x, N_y, R=1.):
 
 
 #------------------------- Compute analytical solution ------------------------
+'''Analytical solution is correct'''
 
 #inv_a = lambda x : 1.0/a(x)
 #g = lambda t : inv_a(t)*(scipy.integrate.quad(f,1,t, epsrel = 1e-14)[0])
@@ -263,8 +275,8 @@ g = lambda t : inv_a(t) * scipy.integrate.quad(f, t, 1)[0]
 
 # print("u2 = ", u2)
 
-u1 = scipy.integrate.quad(g,0,1, epsrel = 1e-14)[0]
-u1 /= -(a_per(0) * scipy.integrate.quad(inv_a,0,1, epsrel = 1e-14)[0])    # u1 = u'(1)
+u1 = scipy.integrate.quad(g, 0, 1, epsrel = 1e-14)[0]
+u1 /= -(a_per(0) * scipy.integrate.quad(inv_a, 0, 1, epsrel = 1e-14)[0])    # u1 = u'(1)
 
 # print("u1 = ", u1)
 
@@ -299,7 +311,7 @@ for i in range(0,N_x+2):
 
 
 #---------------- Show function and derivative graphs -----------------
-'''
+#'''
 nbPoints = 1000
 
 X = np.linspace(0, 1, nbPoints)
@@ -333,7 +345,7 @@ plt.xlabel('x')
 plt.plot(X, Y_approximate_derivative, color='b')
 
 plt.show()
-'''
+#'''
 
 #--------------------- L^2 Error computation --------------------------
 
@@ -349,7 +361,8 @@ def L_2_norm(f, nb_points=1000, a=0, b=1):
     # return scipy.integrate.quad(f_squared, a, b)[0]**(1/2)
     return (np.trapz(Y, X))**(1/2)
 
-X = [i*10 for i in range(1, 8)]
+'''
+X = [i*10 for i in range(2, 8)]
 error_u_list = []
 error_u_derivative_list = []
 
@@ -372,3 +385,4 @@ fig_4.suptitle('L^2 derivative error')
 plt.xlabel('N_x, N_y')
 
 plt.show()
+'''
