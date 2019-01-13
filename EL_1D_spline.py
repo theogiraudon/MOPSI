@@ -11,9 +11,9 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.;
-N=10;
+N=50;
 
-def x(i):
+def t_x(i):
     return i*R/N
 
 def a_per(x):
@@ -25,105 +25,97 @@ def a(x):
 def f(x):
     return 1.    
     
-def spline_matrix(i):
-    Mat = [[x(i)**3,x(i)**2,x(i),1],
-             [3*x(i)**2,2*x(i),1,0],
-              [x(i-1)**3,x(i-1)**2,x(i-1),1],
-               [3*x(i-1)**2,2*x(i-1),1,0]]
-    return Mat
-def coef_spline_phi(i, side):
-    if side=='l':        
-        M = spline_matrix(i)
-        B = [1,0,0,0]
-    elif side=='r':
-        M = spline_matrix(i+1)
-        B = [0,0,1,0]
-    return nl.solve(M,B)
-    
-def coef_spline_psi(i, side):
-    if side=='l':
-        M = spline_matrix(i)
-        B = [0,0,0,1]
-    elif side=='r':
-        M = spline_matrix(i+1)
-        B = [0,1,0,0]
-    return nl.solve(M,B)
+def g1(x):
+    return -2*x**3+3*x**2
+
+def g2(x):
+    return 2*x**3-3*x**2+1
+
+def g3(x):
+    return x**3-x**2
+
+def g4(x):
+    return x**3-2*x**2+x
        
-#---- fonctions spline--------
-def phi(i,y):
-    if y<x(i+1) and y>=x(i):
-        coef = coef_spline_phi(i,'r')
-        return y**3*coef[0]+y**2*coef[1]+y*coef[2]+coef[3]
-    elif y<x(i) and y>=x(i-1):
-        coef = coef_spline_phi(i,'l')
-        return y**3*coef[0]+y**2*coef[1]+y*coef[2]+coef[3]
+def g1_prime(x):
+    return -6*x**2+6*x
+
+def g2_prime(x):
+    return 6*x**2-6*x
+
+def g3_prime(x):
+    return 3*x**2-2*x
+
+def g4_prime(x):
+    return 3*x**2-4*x+1
+
+def phi(i,x):
+    if x<t_x(i+1) and x>=t_x(i):
+        return g2((x-t_x(i))/(t_x(i+1)-t_x(i)))
+    elif x<t_x(i) and x>=t_x(i-1):
+        return g1((x-t_x(i-1))/(t_x(i)-t_x(i-1)))
     else:
         return 0                        
-        
-def phi_prime(i,y):
-    if y<x(i+1) and y>=x(i):
-        coef = coef_spline_phi(i,'r')
-        return 2*y**2*coef[0]+y*coef[1]+coef[2]
-    elif y<x(i) and y>=x(i-1):
-        coef = coef_spline_phi(i,'l')
-        return 2*y**2*coef[0]+y*coef[1]+coef[2]
+
+def psi(i,x):
+    if x<t_x(i+1) and x>=t_x(i):
+        return g4((x-t_x(i))/(t_x(i+1)-t_x(i)))*(t_x(i+1)-t_x(i))
+    elif x<t_x(i) and x>=t_x(i-1):
+        return g3((x-t_x(i-1))/(t_x(i)-t_x(i-1)))*(t_x(i)-t_x(i-1))
     else:
-        return 0 
-        
-def psi(i,y):
-    if y<x(i+1) and y>=x(i):
-        coef = coef_spline_psi(i,'r')
-        return y**3*coef[0]+y**2*coef[1]+y*coef[2]+coef[3]
-    elif y<x(i) and y>=x(i-1):
-        coef = coef_spline_psi(i,'l')
-        return y**3*coef[0]+y**2*coef[1]+y*coef[2]+coef[3]
+        return 0          
+
+def phi_prime(i,x):
+    if x<t_x(i+1) and x>=t_x(i):
+        return g2_prime((x-t_x(i))/(t_x(i+1)-t_x(i)))/(t_x(i+1)-t_x(i))
+    elif x<t_x(i) and x>=t_x(i-1):
+        return g1_prime((x-t_x(i-1))/(t_x(i)-t_x(i-1)))/(t_x(i)-t_x(i-1))
     else:
-        return 0
-        
-def psi_prime(i,y):
-    if y<x(i+1) and y>=x(i):
-        coef = coef_spline_psi(i,'r')
-        return 2*y**2*coef[0]+y*coef[1]+coef[2]
-    elif y<x(i) and y>=x(i-1):
-        coef = coef_spline_psi(i,'l')
-        return 2*y**2*coef[0]+y*coef[1]+coef[2]
+        return 0                        
+
+def psi_prime(i,x):
+    if x<t_x(i+1) and x>=t_x(i):
+        return g4_prime((x-t_x(i))/(t_x(i+1)-t_x(i)))
+    elif x<t_x(i) and x>=t_x(i-1):
+        return g3_prime((x-t_x(i-1))/(t_x(i)-t_x(i-1)))
     else:
-        return 0
-    
+        return 0  
+
+#---- fonctions spline--------
 #--------------------------------------------------------------------------
 
-A = np.zeros((2*N,2*N))
+A = np.zeros((2*N-2,2*N-2))
 
-for i in range(1,N+1):
-    for j in range(1,N+1):
+for i in range(1,N):
+    for j in range(1,N):
         h = lambda y : a(y)*phi_prime(i,y)*phi_prime(j,y)
-        A[i-1][j-1]=scipy.integrate.quad(h,x(i-1),x(i+1))[0]
+        A[i-1][j-1]=scipy.integrate.quad(h,t_x(i-1),t_x(i+1))[0]
 
-for i in range(1,N+1):
-    for j in range(1,N+1):
+for i in range(1,N):
+    for j in range(1,N):
         h = lambda y : a(y)*phi_prime(i,y)*psi_prime(j,y)
-        A[i-1][N+j-1]=scipy.integrate.quad(h,x(i-1),x(i+1))[0]
+        A[i-1][N+j-2]=scipy.integrate.quad(h,t_x(i-1),t_x(i+1))[0]
         
-for i in range(1,N+1):
-    for j in range(1,N+1):
+for i in range(1,N):
+    for j in range(1,N):
         h = lambda y : a(y)*psi_prime(i,y)*phi_prime(j,y)
-        A[N+i-1][j-1]=scipy.integrate.quad(h,x(i-1),x(i+1))[0]
+        A[N+i-2][j-1]=scipy.integrate.quad(h,t_x(i-1),t_x(i+1))[0]
         
-for i in range(1,N+1):
-    for j in range(1,N+1):
+for i in range(1,N):
+    for j in range(1,N):
         h = lambda y : a(y)*psi_prime(i,y)*psi_prime(j,y)
-        A[N+i-1][N+j-1]=scipy.integrate.quad(h,x(i-1),x(i+1))[0]
+        A[N+i-2][N+j-2]=scipy.integrate.quad(h,t_x(i-1),t_x(i+1))[0]
 
 
-B = np.zeros((2*N,1))
+B = np.zeros((2*N-2,1))
     
-for i in range(1,N+1):
+for i in range(1,N):
     g = lambda y : phi(i,y)*f(y)
-    B[i-1]=scipy.integrate.quad(g,x(i-1),x(i+1))[0]
+    B[i-1]=scipy.integrate.quad(g,t_x(i-1),t_x(i+1))[0]
     
-for i in range(1,N+1):
+for i in range(1,N):
     g = lambda y : psi(i,y)*f(y)
-    B[N+i-1]=scipy.integrate.quad(g,x(i-1),x(i+1))[0]
+    B[N+i-2]=scipy.integrate.quad(g,t_x(i-1),t_x(i+1))[0]
 
 #-- Résolution du système linéaire --
 U = np.dot(nl.inv(A),B)
@@ -131,9 +123,9 @@ U = np.dot(nl.inv(A),B)
 
 def solution_approchee(y):
     s=0
-    for i in range(1,N+1):
+    for i in range(1,N):
         s+=U[i-1]*phi(i,y)
-        s+=U[N+i-1]*psi(i,y)
+        s+=U[N+i-2]*psi(i,y)
     return s    
 
 #--------------------------------------------------------------------------
