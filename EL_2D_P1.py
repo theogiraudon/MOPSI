@@ -20,8 +20,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.;
-N_x=60;
-N_y=60;
+N_x=100;
+N_y=100;
 
 
 def t_x(i, N_x, R=1.):
@@ -340,9 +340,9 @@ fig = plt.figure()
 #plt.plot(X, Y_approximate, color='b')
 #
 fig2 = plt.figure()
-plt.plot(X, Y_analytical_derivative, color='r')
+plt.plot(X[1:-1], Y_analytical_derivative[1:-1], color='r')
 plt.xlabel('x')
-plt.plot(X, Y_approximate_derivative, color='b')
+plt.plot(X[1:-1], Y_approximate_derivative[1:-1], color='b')
 
 plt.show()
 #'''
@@ -362,42 +362,27 @@ def L_2_norm(f, nb_points=1000, a=0, b=1):
     return (np.trapz(Y, X))**(1/2)
 
 
-#X = [i*10 for i in range(2, 8)]
+X = [i*10 for i in range(2, 8)]
+H = [R/x for x in X]
 error_u_list = []
 error_u_derivative_list = []
-
-#for N in X:
-#    print("N = ", N)
-#    U = assemble_U(N, N, R)
-#    error_u = lambda x : (approximate_U(x, np.log(x), U, N, N) - solution_analytique(x))
-#    error_u_derivative = lambda x : (approximate_U_derivative(x, np.log(x), U, N, N) - deriv_analytique(x))
-#    error_u_list.append(L_2_norm(error_u, 1000))
-#    error_u_derivative_list.append(L_2_norm(error_u_derivative, 1000))
+e = np.exp(1)
+p = 2
+for N in X:
+    print("N = ", N)
+    U = assemble_U(N, N)
+    error_u_derivative = lambda x : (approximate_U_derivative(x, np.log(x), U, N, N) - deriv_analytique(x))
+    error_u_derivative_list.append(L_2_norm(error_u_derivative, 1000, a=0, b=pow(e,p))/L_2_norm(deriv_analytique, 1000, a=0, b=pow(e,p)))
 
 #fig_3 = plt.figure()
 #plt.plot(X, error_u_list, color='g')
 #fig_3.suptitle('L^2 solution error')
 #plt.xlabel('N_x, N_y')
-#
-#fig_4 = plt.figure()
-#plt.plot(X, error_u_derivative_list, color='r')
-#fig_4.suptitle('L^2 derivative error')
-#plt.xlabel('N_x, N_y')
 
-P = [p for p in range(10)]
-N=50
-error_u_derivative_list = []
-
-for p in P:
-    print("p = ", p)
-    U = assemble_U(N, N)
-    error_u_derivative = lambda x : (approximate_U_derivative(x, np.log(x), U, N, N) - deriv_analytique(x))
-    error_u_derivative_list.append(L_2_norm(error_u_derivative, 1000, a=0, b=pow(0.5,p))/L_2_norm(deriv_analytique, 1000, a=0, b=pow(0.5,p)))
-
-fig_5 = plt.figure()
-plt.plot(P, error_u_derivative_list, color='r')
-fig_5.suptitle('L^2 derivative error')
-plt.xlabel('p')
-
+fig_4 = plt.figure()
+plt.plot(np.log(H), np.log(error_u_derivative_list), color='r')
+fig_4.suptitle('erreur relative en norme L^2 de la dérivée (p =7)')
+plt.xlabel('ln(h)')
+plt.ylabel('ln(err)')
 
 plt.show()

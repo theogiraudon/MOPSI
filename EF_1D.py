@@ -11,7 +11,7 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.;
-N=20;
+N=30;
 
 def x(i):
     return i*R/N
