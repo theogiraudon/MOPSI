@@ -11,7 +11,7 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.;
-N=50;
+N=7;
 
 def t_x(i):
     return i*R/N
@@ -138,7 +138,6 @@ Y = []
 for elt in X:
     Y.append(solution_approchee(elt))
     
-
 plt.xlabel('x')
 
 plt.plot(X,Y)

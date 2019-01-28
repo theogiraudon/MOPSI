@@ -10,8 +10,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #     PARAMETRES DU CALCUL
 #
 #--------------------------------
-R = 1.;
-N=30;
+R = 1.
+N=7
 
 def x(i):
     return i*R/N
@@ -72,7 +72,7 @@ def solution_approchee(y):
 
 fig = plt.figure()
 
-X = np.linspace(0,1,N)
+X = np.linspace(0,1,1000)
 Y = []
 
 for elt in X:
