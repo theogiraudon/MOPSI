@@ -341,9 +341,8 @@ fig = plt.figure()
 #
 fig2 = plt.figure()
 plt.plot(X[1:-1], Y_analytical_derivative[1:-1], color='r')
-plt.xlabel('x')
 plt.plot(X[1:-1], Y_approximate_derivative[1:-1], color='b')
-
+plt.xlabel('x')
 plt.show()
 #'''
 
@@ -362,12 +361,12 @@ def L_2_norm(f, nb_points=1000, a=0, b=1):
     return (np.trapz(Y, X))**(1/2)
 
 
-X = [i*10 for i in range(2, 8)]
+X = [10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,31,32,35,40,50,60,70]
 H = [R/x for x in X]
 error_u_list = []
 error_u_derivative_list = []
 e = np.exp(1)
-p = 2
+p = 6
 for N in X:
     print("N = ", N)
     U = assemble_U(N, N)
@@ -381,7 +380,8 @@ for N in X:
 
 fig_4 = plt.figure()
 plt.plot(np.log(H), np.log(error_u_derivative_list), color='r')
-fig_4.suptitle('erreur relative en norme L^2 de la dérivée (p =7)')
+#plt.plot(H, error_u_derivative_list, color='r')
+
 plt.xlabel('ln(h)')
 plt.ylabel('ln(err)')
 
