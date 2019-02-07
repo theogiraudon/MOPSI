@@ -21,9 +21,9 @@ np.set_printoptions(precision=4)  # pour joli affichage des matrices
 #
 # --------------------------------
 step = 1.;   # Roughly, step of the approximation.
-N_x = 30;    # Dimension of the x range approximation space.
-N_y = 30;    # Dimension of the y range approximation space.
-nb_iter = 50
+N_x = 100;    # Dimension of the x range approximation space.
+N_y = 100;    # Dimension of the y range approximation space.
+nb_iter = 40
 eps = 1e-16
 max_rand_int = 1000;    # Random coefficients picked for the PGD initialization belong to [-max_rand_int, max_rand_int]
 
@@ -111,8 +111,8 @@ print("hello")
 def assemble_C(N_x, step=1.):
     '''
        Assemblage des matrices C.
-       Équivalence PGD : C[0] = D, C[1] = Mat(int(1/x * phi_i' * phi_j)),
-                         C[2] = Mat(int(1/x * phi_i * phi_j')), C[3] = M_{1/x^2}
+       Équivalence PGD : C[0] = D, C[1] = Mat(int(1/x * phi_i * phi_j')),
+                         C[2] = Mat(int(1/x * phi_i' * phi_j)), C[3] = M_{1/x^2}
     '''
     C = [np.zeros((N_x, N_x)) for k in range(4)]
 
@@ -282,8 +282,8 @@ def assemble_f_r(S, S_list, R_list, C, D, F_1, F_2):
     for k in range(1, len(S_list)):
         coeff_1 = np.dot(np.dot(S_list[k], D[0]), S) * C[0]
         coeff_2 = np.dot(np.dot(S_list[k], D[3]), S) * C[3]
-        coeff_3 = np.dot(np.dot(S_list[k], D[1]), S) * C[1]
-        coeff_4 = np.dot(np.dot(S_list[k], D[2]), S) * C[2]
+        coeff_3 = np.dot(np.dot(S_list[k], D[1]), S) * C[2]
+        coeff_4 = np.dot(np.dot(S_list[k], D[2]), S) * C[1]
         result -= np.dot((coeff_1 + coeff_2 + coeff_3 + coeff_4), R_list[k])
     return result
 
@@ -293,7 +293,7 @@ def assemble_A_s(R, C, D):
     '''
     coeff_1 = np.dot(np.dot(R, C[0]), R) * D[0]
     coeff_2 = np.dot(np.dot(R, C[3]), R) * D[3]
-    coeff_3 = np.dot(np.dot(R, C[1]), R) * (D[1] + D[2])
+    coeff_3 = np.dot(np.dot(R, C[2]), R) * (D[1] + D[2])
     return coeff_1 + coeff_2 + coeff_3
 
 def assemble_f_s(R, S_list, R_list, C, D, F_1, F_2):
@@ -304,8 +304,8 @@ def assemble_f_s(R, S_list, R_list, C, D, F_1, F_2):
     for k in range(1, len(S_list)):
         coeff_1 = np.dot(np.dot(R_list[k], C[0]), R) * D[0]
         coeff_2 = np.dot(np.dot(R_list[k], C[3]), R) * D[3]
-        coeff_3 = np.dot(np.dot(R_list[k], C[1]), R) * D[1]
-        coeff_4 = np.dot(np.dot(R_list[k], C[2]), R) * D[2]
+        coeff_3 = np.dot(np.dot(R_list[k], C[2]), R) * D[1]
+        coeff_4 = np.dot(np.dot(R_list[k], C[1]), R) * D[2]
         result -= np.dot((coeff_1 + coeff_2 + coeff_3 + coeff_4), S_list[k])
     return result
 
@@ -331,10 +331,6 @@ def H_0_norm_squared(R, S, C, E):
 def H_0_scalar_product(R0, S0, R1, S1, C, E):
     '''
        Return <R0 tens S0, R1 tens S1>_{H_0}.
-       Équivalence PGD : C[0] = D, C[1] = Mat(int(1/x * phi_i' * phi_j)),
-                         C[2] = Mat(int(1/x * phi_i * phi_j')), C[3] = M_{1/x^2}
-       Équivalence PGD : E[0] = M_psi, E[1] = Mat(int(psi_i' * psi_j)),
-                         E[2] = Mat(int(psi_i * psi_j')), E[3] = D_psi
     '''
     coeff_1 = np.dot(np.dot(R0, C[0]), R1) * np.dot(np.dot(S0, E[0]), S1)
     coeff_2 = np.dot(np.dot(R0, C[3]), R1) * np.dot(np.dot(S0, E[3]), S1)
@@ -359,10 +355,6 @@ def fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps=1e-5, max_rand_
     R_m1, S_m1 = init_R_S(N_x, N_y, max_rand_int)
     R_m0 = np.zeros(N_x)
     S_m0 = np.zeros(N_y)
-    for i in range(N_x):
-        R_m0[i] = R_m1[i]
-    for j in range(N_y):
-        S_m0[j] = S_m1[j]
     counter = 0
     while(counter == 0 or (H_0_diff_norm_squared(R_m0, S_m0, R_m1, S_m1, C, E) > eps)):
         #print("Fixed point Iteration n°", counter)
@@ -374,15 +366,17 @@ def fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps=1e-5, max_rand_
         A_r_S = assemble_A_r(S_m0, C, D)
         F_r_S = assemble_f_r(S_m0, S_list, R_list, C, D, F_1, F_2)
         A_r_S = sparse.csr_matrix(A_r_S)
-        temp = spsolve(A_r_S, F_r_S)
-        for i in range(N_x):
-            R_m1[i] = temp[i]
+        #temp = spsolve(A_r_S, F_r_S)
+        R_m1 = spsolve(A_r_S, F_r_S)
+        #for i in range(N_x):
+            #R_m1[i] = temp[i]
         A_s_R = assemble_A_s(R_m1, C, D)
         F_s_R = assemble_f_s(R_m1, S_list, R_list, C, D, F_1, F_2)
         A_s_R = sparse.csr_matrix(A_s_R)
-        temp = spsolve(A_s_R, F_s_R)
-        for j in range(N_y):
-            S_m1[j] = temp[j]
+        #temp = spsolve(A_s_R, F_s_R)
+        S_m1 = spsolve(A_s_R, F_s_R)
+        #for j in range(N_y):
+            #S_m1[j] = temp[j]
         counter += 1
     return(R_m1, S_m1)
 
@@ -417,7 +411,7 @@ def approximate_U(x, y, R_list, S_list, N_x, N_y, step = 1.):
         s +=  r_k_x * s_k_y
     return s
 
-def approximate_U_derivative(x, y, R_list, S_list, N_x, N_y, step = 1.):
+def approximate_U_derivative(x, y, R_list, S_list, N_x, N_y, step=1.):
     '''
        Return the approximate value of dU(x, y) interpolating from (R, S).
     '''
@@ -429,7 +423,7 @@ def approximate_U_derivative(x, y, R_list, S_list, N_x, N_y, step = 1.):
         s_k_y = sum([S_list[k][j] * psi(j, y, N_y, step) for j in range(N_y)])
         r_k_x = sum([R_list[k][i] * phi(i, x, N_x, step) for i in range(N_x)])
         s_k_y_prime = sum([S_list[k][j] * psi_prime(j, y, N_y, step) for j in range(N_y)])
-        s += r_k_x_prime * s_k_y + (1 / x) * r_k_x * s_k_y_prime
+        s += r_k_x_prime * s_k_y + (1. / x) * r_k_x * s_k_y_prime
     return s
 
 """
@@ -495,7 +489,7 @@ for i in range(0,N_x+2):
 
 # ---------------- Show function and derivative graphs -----------------
 # '''
-nbPoints = 100
+nbPoints = 2000
 
 X = np.linspace(0, 1, nbPoints)
 
