@@ -21,9 +21,9 @@ np.set_printoptions(precision=4)  # pour joli affichage des matrices
 #
 # --------------------------------
 step = 1.;   # Roughly, step of the approximation.
-N_x = 100;    # Dimension of the x range approximation space.
-N_y = 100;    # Dimension of the y range approximation space.
-nb_iter = 40
+N_x = 30;    # Dimension of the x range approximation space.
+N_y = 30;    # Dimension of the y range approximation space.
+nb_iter = 30
 eps = 1e-16
 max_rand_int = 1000;    # Random coefficients picked for the PGD initialization belong to [-max_rand_int, max_rand_int]
 
@@ -190,6 +190,25 @@ def assemble_D(N_y, step=1.):
             D[3][j][l] = result_h
     return D
 
+def assemble_F(N_x, N_y, R=1.):
+    '''
+       Assemblage de la matrice F
+    '''
+    F = np.zeros(N_x * N_y)
+    for i in range(0, N_x):
+        for j in range(0, N_y):
+            g = lambda x: phi(i, x, N_x, R) * f(x)
+            h = lambda y: psi(j, y, N_y, R)
+
+            result_g = scipy.integrate.quad(g, t_x(i, N_x, R), t_x(i + 2, N_x, R), epsrel=1e-16)[0]
+            if j == (N_y - 1):
+                result_h = (scipy.integrate.quad(h, 0, t_y(1, N_y, R), epsrel=1e-16)[0] +
+                            scipy.integrate.quad(h, t_y(N_y - 1, N_y, R), 1, epsrel=1e-16)[0])
+            else:
+                result_h = scipy.integrate.quad(h, t_y(j, N_y, R), t_y(j + 2, N_y, R), epsrel=1e-16)[0]
+            F[K(i, j, N_y)] = result_g * result_h
+    return F
+
 def assemble_E(N_y, step=1.):
     '''
        Assemblage des matrices E.
@@ -264,6 +283,8 @@ def assemble_F_2(N_y, step=1.):
             result_h = scipy.integrate.quad(h, t_y(j, N_y, step), t_y(j + 2, N_y, step), epsrel=1e-16)[0]
         F_2[j] = result_h
     return F_2
+
+# -------------------------- PGD approximation of U -----------------------------
 
 def assemble_A_r(S, C, D):
     '''
@@ -366,17 +387,11 @@ def fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps=1e-5, max_rand_
         A_r_S = assemble_A_r(S_m0, C, D)
         F_r_S = assemble_f_r(S_m0, S_list, R_list, C, D, F_1, F_2)
         A_r_S = sparse.csr_matrix(A_r_S)
-        #temp = spsolve(A_r_S, F_r_S)
         R_m1 = spsolve(A_r_S, F_r_S)
-        #for i in range(N_x):
-            #R_m1[i] = temp[i]
         A_s_R = assemble_A_s(R_m1, C, D)
         F_s_R = assemble_f_s(R_m1, S_list, R_list, C, D, F_1, F_2)
         A_s_R = sparse.csr_matrix(A_s_R)
-        #temp = spsolve(A_s_R, F_s_R)
         S_m1 = spsolve(A_s_R, F_s_R)
-        #for j in range(N_y):
-            #S_m1[j] = temp[j]
         counter += 1
     return(R_m1, S_m1)
 
@@ -398,7 +413,7 @@ def PGD(nb_iter, N_x, N_y, eps=1e-5, max_rand_int=max_rand_int, step = 1.):
         S_list += [S_n]
     return (R_list, S_list)
 
-def approximate_U(x, y, R_list, S_list, N_x, N_y, step = 1.):
+def approximate_U_PGD(x, y, R_list, S_list, N_x, N_y, step = 1.):
     '''
        Return the approximate value of U(x, y) interpolating from (R, S).
     '''
@@ -411,7 +426,7 @@ def approximate_U(x, y, R_list, S_list, N_x, N_y, step = 1.):
         s +=  r_k_x * s_k_y
     return s
 
-def approximate_U_derivative(x, y, R_list, S_list, N_x, N_y, step=1.):
+def approximate_U_derivative_PGD(x, y, R_list, S_list, N_x, N_y, step=1.):
     '''
        Return the approximate value of dU(x, y) interpolating from (R, S).
     '''
@@ -426,7 +441,21 @@ def approximate_U_derivative(x, y, R_list, S_list, N_x, N_y, step=1.):
         s += r_k_x_prime * s_k_y + (1. / x) * r_k_x * s_k_y_prime
     return s
 
-"""
+# -------------------------- P1 approximation of U -----------------------------
+
+def assemble_B(C, D, N_x, N_y):
+    '''
+       Assemblage de B
+    '''
+    B = np.zeros((N_x * N_y, N_x * N_y))
+
+    for i in range(0, N_x):
+        for j in range(0, N_y):
+            for k in range(0, N_x):
+                for l in range(0, N_y):
+                    B[K(i, j, N_y), K(k, l, N_y)] = sum([C[m][i, k] * D[m][j, l] for m in range(4)])
+    return B
+
 def assemble_U(N_x, N_y, step=1.):
     C = assemble_C(N_x, step)
     D = assemble_D(N_y, step)
@@ -435,9 +464,8 @@ def assemble_U(N_x, N_y, step=1.):
     B = sparse.csr_matrix(B)
     return spsolve(B, F)
 
-
 def approximate_U(x, y, U, N_x, N_y, step=1.):
-    s = 0
+    s=0
     # Périodicité en y
     y = y - np.floor(y)
     for i in range(0, N_x):
@@ -445,9 +473,8 @@ def approximate_U(x, y, U, N_x, N_y, step=1.):
             s += U[K(i, j, N_y)] * phi(i, x, N_x, step) * psi(j, y, N_y, step)
     return s
 
-
 def approximate_U_derivative(x, y, U, N_x, N_y, step=1.):
-    s = 0
+    s=0
     # Périodicité en y
     y = y - np.floor(y)
     for i in range(0, N_x):
@@ -456,7 +483,6 @@ def approximate_U_derivative(x, y, U, N_x, N_y, step=1.):
                   * (phi_prime(i, x, N_x, step) * psi(j, y, N_y, step)
                      + (1.0 / x) * phi(i, x, N_x, step) * psi_prime(j, y, N_y, step)))
     return s
-"""
 
 # ------------------------- Compute analytical solution ------------------------
 
@@ -475,50 +501,57 @@ def solution_analytique(x):
 def deriv_analytique(x):
     return g(x) + a_per(0) * u1 * inv_a(x)
 
-'''
-fig = plt.figure()
-
-Uvec = np.zeros((N_x+2,N_y+1))
-for i in range(0,N_x+2):
-    for j in range(0,N_y+1):
-        Uvec[i,j] = solution_approchee(t_x(i, N_x, step), t_y(j, N_y, step))
-'''
-# plt.imshow(Uvec)
-# plt.show()
-
-
 # ---------------- Show function and derivative graphs -----------------
 # '''
-nbPoints = 2000
+nbPoints = 500
 
 X = np.linspace(0, 1, nbPoints)
+
+U = assemble_U(N_x, N_y, step)
 
 R_list, S_list = PGD(nb_iter, N_x, N_y, eps, max_rand_int, step)
 
 Y_analytical = np.linspace(0, 1, nbPoints)
 Y_analytical[1:] = [solution_analytique(x) for x in X[1:]]
-Y_analytical[0] = Y_analytical[1]  # The derivative is undefined in 0
+Y_analytical[0] = Y_analytical[1]  # For smoother edges
+Y_analytical[-1] = Y_analytical[-2]
 
 Y_approximate = np.linspace(0, 1, nbPoints)
-Y_approximate[0] = 0
-Y_approximate[1:] = [approximate_U(x, np.log(x), R_list, S_list, N_x, N_y, step) for x in X[1:]]
+Y_approximate[1:] = [approximate_U(x, np.log(x), U, N_x, N_y) for x in X[1:]]
+Y_approximate[0] = Y_approximate[1]
+Y_approximate[-1] = Y_approximate[-2]
+
+Y_approximate_PGD = np.linspace(0, 1, nbPoints)
+Y_approximate_PGD[1:] = [approximate_U_PGD(x, np.log(x), R_list, S_list, N_x, N_y, step) for x in X[1:]]
+Y_approximate_PGD[0] = Y_approximate_PGD[1]
+Y_approximate_PGD[-1] = Y_approximate_PGD[-2]
 
 Y_analytical_derivative = np.linspace(0, 1, nbPoints)
 Y_analytical_derivative[1:] = [deriv_analytique(x) for x in X[1:]]
-Y_analytical_derivative[0] = Y_analytical_derivative[1]  # The derivative is undefined in 0
+Y_analytical_derivative[0] = Y_analytical_derivative[1]
+Y_analytical_derivative[-1] = Y_analytical_derivative[-2]
 
 Y_approximate_derivative = np.linspace(0, 1, nbPoints)
-Y_approximate_derivative[0] = 0
-Y_approximate_derivative[1:] = [approximate_U_derivative(x, np.log(x), R_list, S_list, N_x, N_y, step) for x in X[1:]]
+Y_approximate_derivative[1:] = [approximate_U_derivative(x, np.log(x), U, N_x, N_y) for x in X[1:]]
+Y_approximate_derivative[0] = Y_approximate_derivative[1]
+Y_approximate_derivative[-1] = Y_approximate_derivative[-2]
+
+Y_approximate_derivative_PGD = np.linspace(0, 1, nbPoints)
+Y_approximate_derivative_PGD[1:] = [approximate_U_derivative_PGD(x, np.log(x), R_list,
+                                                                 S_list, N_x, N_y, step) for x in X[1:]]
+Y_approximate_derivative_PGD[0] = Y_approximate_derivative_PGD[1]
+Y_approximate_derivative_PGD[-1] = Y_approximate_derivative_PGD[-2]
 
 fig = plt.figure()
 plt.plot(X, Y_analytical, color='r')
 plt.plot(X, Y_approximate, color='b')
+plt.plot(X, Y_approximate_PGD, color='g')
 plt.xlabel('x')
 
 fig2 = plt.figure()
-plt.plot(X[1:-1], Y_analytical_derivative[1:-1], color='r')
-plt.plot(X[1:-1], Y_approximate_derivative[1:-1], color='b')
+plt.plot(X, Y_analytical_derivative, color='r')
+plt.plot(X, Y_approximate_derivative, color='b')
+plt.plot(X, Y_approximate_derivative_PGD, color='g')
 plt.xlabel('x')
 plt.show()
 
