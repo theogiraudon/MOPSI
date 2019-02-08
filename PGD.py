@@ -20,12 +20,12 @@ np.set_printoptions(precision=4)  # pour joli affichage des matrices
 #     PARAMETRES DU CALCUL
 #
 # --------------------------------
-step = 1.;   # Roughly, step of the approximation.
-N_x = 30;    # Dimension of the x range approximation space.
-N_y = 30;    # Dimension of the y range approximation space.
-nb_iter = 30
-eps = 1e-16
-max_rand_int = 1000;    # Random coefficients picked for the PGD initialization belong to [-max_rand_int, max_rand_int]
+step = 1.              # Roughly, step of the approximation.
+N_x = 30               # Dimension of the x range approximation space.
+N_y = 31               # Dimension of the y range approximation space.
+nb_iter = 30           # Number of PGD iterations
+eps = 1e-16            # Fixed point algorithm precision
+max_rand_int = 1000    # Random coefficients picked for the PGD initialization belong to [-max_rand_int, max_rand_int]
 
 
 def t_x(i, N_x, step=1.):
@@ -367,7 +367,7 @@ def H_0_diff_norm_squared(R_m0, S_m0, R_m1, S_m1, C, E):
     return (H_0_norm_squared(R_m1, S_m1, C, E) + H_0_norm_squared(R_m0, S_m0, C, E) -
             2 * H_0_scalar_product(R_m0, S_m0, R_m1, S_m1, C, E))
 
-def fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps=1e-5, max_rand_int=max_rand_int):
+def fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps, max_rand_int=max_rand_int):
     '''
        Return (R_n, S_n) for n >= 1.
        R is the [R_0, R_1,..., R_{n-1}] list of the consecutive iterations of the PGD algorithm.
@@ -395,17 +395,12 @@ def fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps=1e-5, max_rand_
         counter += 1
     return(R_m1, S_m1)
 
-def PGD(nb_iter, N_x, N_y, eps=1e-5, max_rand_int=max_rand_int, step = 1.):
+def PGD(nb_iter, C, D, E, F_1, F_2, N_x, N_y, eps=1e-16, max_rand_int=max_rand_int, step = 1.):
     '''
        Return R_list and S_list such that U(x, y) =~ sum_k(sum_i(R_list[k][i]phi_i(x)) * sum_j(S_list[k][j]psi_j(y))
     '''
     R_list = [np.zeros(N_x)]
     S_list = [np.zeros(N_y)]
-    C = assemble_C(N_x, step)
-    D = assemble_D(N_y, step)
-    F_1 = assemble_F_1(N_x, step)
-    F_2 = assemble_F_2(N_y, step)
-    E = assemble_E(N_y, step)
     for n in range(nb_iter):
         print("PGD Iteration n°", n)
         R_n, S_n = fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps, max_rand_int)
@@ -456,9 +451,7 @@ def assemble_B(C, D, N_x, N_y):
                     B[K(i, j, N_y), K(k, l, N_y)] = sum([C[m][i, k] * D[m][j, l] for m in range(4)])
     return B
 
-def assemble_U(N_x, N_y, step=1.):
-    C = assemble_C(N_x, step)
-    D = assemble_D(N_y, step)
+def assemble_U(C, D, N_x, N_y, step=1.):
     B = assemble_B(C, D, N_x, N_y)
     F = assemble_F(N_x, N_y, step)
     B = sparse.csr_matrix(B)
@@ -502,14 +495,20 @@ def deriv_analytique(x):
     return g(x) + a_per(0) * u1 * inv_a(x)
 
 # ---------------- Show function and derivative graphs -----------------
-# '''
-nbPoints = 500
+
+nbPoints = 1000
 
 X = np.linspace(0, 1, nbPoints)
 
-U = assemble_U(N_x, N_y, step)
+C = assemble_C(N_x, step)
+D = assemble_D(N_y, step)
+F_1 = assemble_F_1(N_x, step)
+F_2 = assemble_F_2(N_y, step)
+E = assemble_E(N_y, step)
+U = assemble_U(C, D, N_x, N_y, step)
 
-R_list, S_list = PGD(nb_iter, N_x, N_y, eps, max_rand_int, step)
+R_list1, S_list1 = PGD(nb_iter, C, D, E, F_1, F_2, N_x, N_y, eps, max_rand_int, step)
+
 
 Y_analytical = np.linspace(0, 1, nbPoints)
 Y_analytical[1:] = [solution_analytique(x) for x in X[1:]]
@@ -522,7 +521,7 @@ Y_approximate[0] = Y_approximate[1]
 Y_approximate[-1] = Y_approximate[-2]
 
 Y_approximate_PGD = np.linspace(0, 1, nbPoints)
-Y_approximate_PGD[1:] = [approximate_U_PGD(x, np.log(x), R_list, S_list, N_x, N_y, step) for x in X[1:]]
+Y_approximate_PGD[1:] = [approximate_U_PGD(x, np.log(x), R_list1, S_list1, N_x, N_y, step) for x in X[1:]]
 Y_approximate_PGD[0] = Y_approximate_PGD[1]
 Y_approximate_PGD[-1] = Y_approximate_PGD[-2]
 
@@ -537,62 +536,95 @@ Y_approximate_derivative[0] = Y_approximate_derivative[1]
 Y_approximate_derivative[-1] = Y_approximate_derivative[-2]
 
 Y_approximate_derivative_PGD = np.linspace(0, 1, nbPoints)
-Y_approximate_derivative_PGD[1:] = [approximate_U_derivative_PGD(x, np.log(x), R_list,
-                                                                 S_list, N_x, N_y, step) for x in X[1:]]
+Y_approximate_derivative_PGD[1:] = [approximate_U_derivative_PGD(x, np.log(x), R_list1,
+                                                                 S_list1, N_x, N_y, step) for x in X[1:]]
 Y_approximate_derivative_PGD[0] = Y_approximate_derivative_PGD[1]
 Y_approximate_derivative_PGD[-1] = Y_approximate_derivative_PGD[-2]
+
 
 fig = plt.figure()
 plt.plot(X, Y_analytical, color='r')
 plt.plot(X, Y_approximate, color='b')
-plt.plot(X, Y_approximate_PGD, color='g')
+plt.plot(X, Y_approximate_PGD, color='c')
 plt.xlabel('x')
+
 
 fig2 = plt.figure()
 plt.plot(X, Y_analytical_derivative, color='r')
 plt.plot(X, Y_approximate_derivative, color='b')
-plt.plot(X, Y_approximate_derivative_PGD, color='g')
+plt.plot(X, Y_approximate_derivative_PGD, color='c')
 plt.xlabel('x')
 plt.show()
 
 
-# '''
+# --------------------- Error computation --------------------------
 
-# --------------------- L^2 Error computation --------------------------
+def U_P1_energy_norm_squared(U, C, D, N_x, N_y):
+    '''
+       Return ||U_P1||_{energy}^2.
+       There is probably a cleaner way to implement this, using matrix products.
+    '''
+    result = 0
+    for i in range(N_x):
+        for j in range(N_y):
+            for k in range(N_x):
+                for l in range(N_y):
+                    result += U[K(i, j, N_y)] * U[K(k, l, N_y)] * sum([C[m][i][k] * D[m][j][l] for m in range(4)])
+    return result
 
-def L_2_norm(f, nb_points=1000, a=0, b=1):
+def U_PGD_energy_norm_squared(R_list, S_list, C, D):
     '''
-       Return the approximate L^2 norm of f restricted to (inf, sup) using
-       nb_points points in the range.
+       Return ||U_PGD||_{energy}^2.
     '''
-    X = [a + b * i / nb_points for i in range(1, nb_points + 1)]
-    Y = [f(x) for x in X]
-    Y = [y * y for y in Y]
-    return (np.trapz(Y, X)) ** (1 / 2)
+    result = 0
+    for k in range(1, len(R_list)):
+        for l in range(1, len(S_list)):
+            result += sum([np.dot(np.dot(R_list[k], C[m]), R_list[l]) *
+                           np.dot(np.dot(S_list[k], D[m]), S_list[l]) for m in range(4)])
+    return result
+
+def U_P1_U_PGD_energy_norm_scalar_product(U, R_list, S_list, C, D, N_x, N_y):
+    '''
+       Return <U_P1, U_PGD>_{energy}.
+       Équivalence PGD : C[0] = D, C[1] = Mat(int(1/x * phi_i * phi_j')),
+                         C[2] = Mat(int(1/x * phi_i' * phi_j)), C[3] = M_{1/x^2}
+       Équivalence PGD : D[0] = M_aper, D[1] = Mat(int(aper * psi_i' * psi_j)),
+                         D[2] = Mat(int(aper * psi_i * psi_j')), D[3] = D_aper
+    '''
+    result = 0
+    for i in range(N_x):
+        for j in range(N_y):
+            for k in range(1, len(R_list)):
+                result += U[K(i, j, N_y)] * sum([sum([R_list[k][l] * C[n][i][l] for l in range(N_x)]) *
+                                                 sum([S_list[k][m] * D[n][j][m] for m in range(N_y)]) for n in range(4)])
+    return result
+
+def error_energy_norm(U, R_list, S_list, C, D, N_x, N_y):
+    '''
+       Return ||U_P1 - U_PGD||_{energy}, where U_P1 is the approximation of U using the P1 method and U_PGD the
+       approximation of U using the PGD method.
+       Reminder : ||f||_{energy} = ||aper*(dx + 1/x*dy)f||_{L^2}.
+    '''
+    return (U_P1_energy_norm_squared(U, C, D, N_x, N_y) + U_PGD_energy_norm_squared(R_list, S_list, C, D) -
+            2 * U_P1_U_PGD_energy_norm_scalar_product(U, R_list, S_list, C, D, N_x, N_y)) ** (1 / 2)
+
+# --------------------- Draw PGD error graph --------------------------
 '''
-X = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 35, 40, 50, 60, 70]
-H = [step / x for x in X]
-error_u_list = []
-error_u_derivative_list = []
-e = np.exp(1)
-p = 6
-for N in X:
-    print("N = ", N)
-    U = assemble_U(N, N)
-    error_u_derivative = lambda x: (approximate_U_derivative(x, np.log(x), U, N, N) - deriv_analytique(x))
-    error_u_derivative_list.append(L_2_norm(error_u_derivative, 1000, a=0, b=pow(e, p)) / L_2_norm(deriv_analytique, 1000, a=0, b=pow(e, p)))
+C = assemble_C(N_x, step)
+D = assemble_D(N_y, step)
+F_1 = assemble_F_1(N_x, step)
+F_2 = assemble_F_2(N_y, step)
+E = assemble_E(N_y, step)
+U = assemble_U(C, D, N_x, N_y, step)
 
-# fig_3 = plt.figure()
-# plt.plot(X, error_u_list, color='g')
-# fig_3.suptitle('L^2 solution error')
-# plt.xlabel('N_x, N_y')
+N = [n for n in range(1, 42, 2)]
+Y_log = []
+for n in N:
+    R_list, S_list = PGD(n, C, D, E, F_1, F_2, N_x, N_y, eps, max_rand_int, step)
+    Y_log += [np.log(error_energy_norm(U, R_list, S_list, C, D, N_x, N_y))]
 
-fig_4 = plt.figure()
-plt.plot(np.log(H), np.log(error_u_derivative_list), color='r')
-# plt.plot(H, error_u_derivative_list, color='r')
-
-plt.xlabel('ln(h)')
+plt.plot(N, Y_log, color='r')
+plt.xlabel('n')
 plt.ylabel('ln(err)')
-
 plt.show()
 '''
