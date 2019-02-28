@@ -2,8 +2,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as nl
-import scipy.integrate
 np.set_printoptions(precision=4) # pour joli affichage des matrices
+
+import sol_anal_1D
 
 #--------------------------------
 #
@@ -11,13 +12,13 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.
-N=15
-P=50
+N=10
+P=30
 
 def integrate(h, a, b):
     s = 0
-    step = (b-a)/P
-    for i in range(P):
+    step = (b-a)/(2*P)
+    for i in range(2*P):
         s += step*h(a+step/2+i*step)
     return s
     
@@ -83,21 +84,12 @@ X = np.linspace(0,1,1000)
 Y = []
 
 for elt in X:
-    Y.append(solution_approchee(elt))
-    
+    Y.append(solution_approchee(elt))    
 
 plt.xlabel('x')
 
 plt.plot(X,Y)
-
-inv_a = lambda x : 1/a(x)
-g = lambda t : -inv_a(t)*(integrate(f,t,1))
-u1 = integrate(g,0,1)
-u1 /= -integrate(inv_a,0,1)
-
-def solution_analytique(x):
-    return -integrate(g,x,1) - u1*integrate(inv_a,x,1)
     
-Y_analytique = [-solution_analytique(x) for x in X]
+Y_analytique = [sol_anal_1D.solution_analytique(x) for x in X]
 plt.plot(X,Y_analytique,color='r')
 plt.show()
