@@ -11,8 +11,16 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.
-N=7
+N=15
+P=50
 
+def integrate(h, a, b):
+    s = 0
+    step = (b-a)/P
+    for i in range(P):
+        s += step*h(a+step/2+i*step)
+    return s
+    
 def x(i):
     return i*R/N
 
@@ -49,15 +57,14 @@ A = np.zeros((N-1,N-1))
 for i in range(1,N):
     for j in range(1,N):
         h = lambda y : a(y)*phi_prime(i,y)*phi_prime(j,y)
-        result_h=scipy.integrate.quad(h,x(i-1),x(i+1))
-        A[i-1][j-1]=result_h[0]
+        A[i-1][j-1]=integrate(h,x(i-1),x(i+1))
+
 
 B = np.zeros((N-1,1))
     
 for i in range(1,N):
     g = lambda y : phi(i,y)*f(y)
-    result_g=scipy.integrate.quad(g,x(i-1),x(i+1))
-    B[i-1]=result_g[0]
+    B[i-1]=integrate(g,x(i-1),x(i+1))
 
 #-- Résolution du système linéaire --
 U = np.dot(nl.inv(A),B)
@@ -84,14 +91,12 @@ plt.xlabel('x')
 plt.plot(X,Y)
 
 inv_a = lambda x : 1/a(x)
-g = lambda t : inv_a(t)*(scipy.integrate.quad(f,1,t)[0])
-u1 = scipy.integrate.quad(g,0,1)[0]
-u1 /= -scipy.integrate.quad(inv_a,0,1)[0]
+g = lambda t : -inv_a(t)*(integrate(f,t,1))
+u1 = integrate(g,0,1)
+u1 /= -integrate(inv_a,0,1)
 
 def solution_analytique(x):
-    integral1 = scipy.integrate.quad(g,1,x)
-    integral2 = scipy.integrate.quad(inv_a,1,x)
-    return integral1[0] + u1*integral2[0]
+    return -integrate(g,x,1) - u1*integrate(inv_a,x,1)
     
 Y_analytique = [-solution_analytique(x) for x in X]
 plt.plot(X,Y_analytique,color='r')
