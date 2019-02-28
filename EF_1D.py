@@ -90,6 +90,21 @@ plt.xlabel('x')
 
 plt.plot(X,Y)
     
-Y_analytique = [sol_anal_1D.solution_analytique(x) for x in X]
+file = open("Val_sol_anal.txt","r")
+
+def recuperation_tableau_sol_anal():
+    tab_str=[]
+    for c in file:
+        tab_str.append(float(c))
+    return tab_str
+    
+tab_sol_anal = recuperation_tableau_sol_anal()
+print(len(tab_sol_anal))
+def solution_analytique_interpolee(x):
+    i = int(x*sol_anal_1D.N_max*sol_anal_1D.P_max)
+    return tab_sol_anal[i]
+    
+
+Y_analytique = [solution_analytique_interpolee(x) for x in X]
 plt.plot(X,Y_analytique,color='r')
 plt.show()
