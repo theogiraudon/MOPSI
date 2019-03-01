@@ -10,8 +10,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.
-N_max=10
-P_max=50
+N_max=15
+P_max=100
 
 def integrate(h, a, b):
     s = 0
@@ -40,16 +40,23 @@ u1 /= -integrate(inv_a,0,1)
 def solution_analytique(x):
     return integrate(g,x,1) + u1*integrate(inv_a,x,1)
 
-file = open("Val_sol_anal.txt","w")
+#file = open("Val_sol_anal.txt","w")
+#
+#for i in range(N_max*P_max):
+#    file.write(str(solution_analytique(i/(N_max*P_max))))
+#    file.write("\n")
+#    
+#file.write(str(solution_analytique(1)))
+#file.close()
+
+T=[]
 
 for i in range(N_max*P_max):
-    file.write(str(solution_analytique(i/(N_max*P_max))))
-    file.write("\n")
+    T.append(solution_analytique(i/(N_max*P_max)))
     
-file.write(str(solution_analytique(1)))
-file.close()
+np.save("Val_sol_anal_1D.npy",T)
 
-plot_end = 1
-
-X = np.linspace(0,plot_end,1000)
-plt.plot(X,solution_analytique(X))
+#plot_end = 1
+#
+#X = np.linspace(0,plot_end,1000)
+#plt.plot(X,solution_analytique(X))
