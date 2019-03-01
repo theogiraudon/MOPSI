@@ -6,6 +6,7 @@ from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
 np.set_printoptions(precision=4) # pour joli affichage des matrices
 
+
 #--------------------------------
 #
 #     PARAMETRES DU CALCUL
@@ -28,12 +29,8 @@ def integrate(h, a, b, P):
     for i in range(2*P):
         s += step*h(a+step/2+i*step)
     return s
-    
 
 def t_x(i, N):
-    '''
-    The steps of the decomposition
-    '''
     return i*R/N
 
 def a_per(x):
@@ -43,40 +40,99 @@ def a(x):
     return a_per(np.log(x))    
     
 def f(x):
-    return 1.
+    return 1.    
     
-#---- fonctions chapeaux--------
-def phi(i, y, N):
-    if y<t_x(i+1, N) and y>=t_x(i, N):
-        return (t_x(i+1, N)-y)/(t_x(i+1, N)-t_x(i, N))
-    elif y<t_x(i, N) and y>=t_x(i-1, N):
-        return (y-t_x(i-1, N))/(t_x(i, N)-t_x(i-1, N))
+def g1(x):
+    return -2*x**3+3*x**2
+
+def g2(x):
+    return 2*x**3-3*x**2+1
+
+def g3(x):
+    return x**3-x**2
+
+def g4(x):
+    return x**3-2*x**2+x
+       
+def g1_prime(x):
+    return -6*x**2+6*x
+
+def g2_prime(x):
+    return 6*x**2-6*x
+
+def g3_prime(x):
+    return 3*x**2-2*x
+
+def g4_prime(x):
+    return 3*x**2-4*x+1
+
+def phi(i, x, N):
+    if x<t_x(i+1, N) and x>=t_x(i, N):
+        return g2((x-t_x(i, N))/(t_x(i+1, N)-t_x(i, N)))
+    elif x<t_x(i, N) and x>=t_x(i-1, N):
+        return g1((x-t_x(i-1, N))/(t_x(i, N)-t_x(i-1, N)))
     else:
         return 0                        
-        
-def phi_prime(i, y, N):
-    if y<t_x(i+1, N) and y>=t_x(i, N):
-        return -1/(t_x(i+1, N)-t_x(i, N))
-    elif y<t_x(i, N) and y>=t_x(i-1, N):
-        return 1/(t_x(i, N)-t_x(i-1, N))
+
+def psi(i, x, N):
+    if x<t_x(i+1, N) and x>=t_x(i, N):
+        return g4((x-t_x(i, N))/(t_x(i+1, N)-t_x(i, N)))*(t_x(i+1, N)-t_x(i, N))
+    elif x<t_x(i, N) and x>=t_x(i-1, N):
+        return g3((x-t_x(i-1, N))/(t_x(i, N)-t_x(i-1, N)))*(t_x(i, N)-t_x(i-1, N))
     else:
-        return 0 
+        return 0          
+
+def phi_prime(i, x, N):
+    if x<t_x(i+1, N) and x>=t_x(i, N):
+        return g2_prime((x-t_x(i, N))/(t_x(i+1, N)-t_x(i, N)))/(t_x(i+1, N)-t_x(i, N))
+    elif x<t_x(i, N) and x>=t_x(i-1, N):
+        return g1_prime((x-t_x(i-1, N))/(t_x(i, N)-t_x(i-1, N)))/(t_x(i, N)-t_x(i-1, N))
+    else:
+        return 0                        
+
+def psi_prime(i, x, N):
+    if x<t_x(i+1, N) and x>=t_x(i, N):
+        return g4_prime((x-t_x(i, N))/(t_x(i+1, N)-t_x(i, N)))
+    elif x<t_x(i, N) and x>=t_x(i-1, N):
+        return g3_prime((x-t_x(i-1, N))/(t_x(i, N)-t_x(i-1, N)))
+    else:
+        return 0  
+
     
 #--------------------------------------------------------------------------
 
 def assemble_A(N, P, R=1.):
-    A = lil_matrix((N-1, N-1))
+    A = lil_matrix((2*N-2, 2*N-2))    
     for i in range(1,N):
         for j in range(1,N):
-            h = lambda y : a(y)*phi_prime(i, y, N)*phi_prime(j, y, N)
-            A[i-1,j-1]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
+            h = lambda x : a(x)*phi_prime(i, x, N)*phi_prime(j, x, N)
+            A[i-1, j-1]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
+    
+    for i in range(1,N):
+        for j in range(1,N):
+            h = lambda x : a(x)*phi_prime(i, x, N)*psi_prime(j, x, N)
+            A[i-1, N+j-2]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
+            
+    for i in range(1,N):
+        for j in range(1,N):
+            h = lambda x : a(x)*psi_prime(i, x, N)*phi_prime(j, x, N)
+            A[N+i-2, j-1]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
+            
+    for i in range(1,N):
+        for j in range(1,N):
+            h = lambda x : a(x)*psi_prime(i, x, N)*psi_prime(j, x, N)
+            A[N+i-2, N+j-2]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
+            
     return A
 
 def assemble_B(N, P, R=1.):    
-    B = lil_matrix((N-1,1))        
+    B = lil_matrix((2*N-2,1))        
     for i in range(1,N):
-        g = lambda y : phi(i, y, N)*f(y)
+        g = lambda x : phi(i, x, N)*f(x)
         B[i-1]=integrate(g,t_x(i-1, N),t_x(i+1, N), P)
+    for i in range(1,N):
+        g = lambda x : psi(i, x, N)*f(x)
+        B[N+i-2]=integrate(g,t_x(i-1, N),t_x(i+1, N), P)
     return B
 
 def assemble_U(N, P, R=1.):
@@ -90,9 +146,11 @@ def approximate_solution(x, U, N, P, R=1.):
     Returns the approximate solution at point x
     '''
     s=0
-    for i in range(N-1):
-        s+=U[i]*phi(i+1, x, N)
+    for i in range(1,N):
+        s+=U[i-1]*phi(i, x, N)
+        s+=U[N+i-2]*psi(i, x, N)
     return s    
+    
 
 #--------------------------------------------------------------------------
 #
@@ -149,10 +207,11 @@ tab_N = [n for n in range(3,20)]
 for N in tab_N:
     print("N = ",N)
     U = assemble_U(N, P)
-    dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, P)
-    L2_relative_error_Tab.append(L2_relative_error(anal_sol_interpolated, dif_sol_anal_et_app, U, 0, np.exp(-p), N))
+#    dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, P)
+#    L2_relative_error_Tab.append(L2_relative_error(anal_sol_interpolated, dif_sol_anal_et_app, U, 0, np.exp(-p), N))
+    plt.plot(X, [approximate_solution(x, U, N, P) for x in X])
 
-plt.plot(np.log(tab_N), np.log(L2_relative_error_Tab))
+#plt.plot(np.log(tab_N), np.log(L2_relative_error_Tab))
 
 #
 #Y_analytique = [solution_analytique_interpolee(x) for x in X]
