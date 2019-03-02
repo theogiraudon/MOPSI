@@ -25,9 +25,20 @@ def integrate(h, a, b, P):
     Integrate the function h between a and b with a method of rectangles with P points
     '''
     s = 0
-    step = (b-a)/(2*P)
-    for i in range(2*P):
-        s += step*h(a+step/2+i*step)
+    if a < 0:
+        a = (b+a)/2
+        step = (b-a)/P
+        for i in range(P):
+            s += step*h(a+step/2+i*step)        
+    elif b > 1:
+        b = (b+a)/2
+        step = (b-a)/P
+        for i in range(P):
+            s += step*h(a+step/2+i*step)   
+    else:
+        step = (b-a)/(2*P)
+        for i in range(2*P):
+            s += step*h(a+step/2+i*step)
     return s
 
 def t_x(i, N):
@@ -102,37 +113,37 @@ def psi_prime(i, x, N):
 #--------------------------------------------------------------------------
 
 def assemble_A(N, P, R=1.):
-    A = lil_matrix((2*N-2, 2*N-2))    
-    for i in range(1,N):
-        for j in range(1,N):
+    A = lil_matrix((2*N, 2*N))    
+    for i in range(1, N):
+        for j in range(1, N):
             h = lambda x : a(x)*phi_prime(i, x, N)*phi_prime(j, x, N)
             A[i-1, j-1]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
     
-    for i in range(1,N):
-        for j in range(1,N):
+    for i in range(1, N):
+        for j in range(N+1):
             h = lambda x : a(x)*phi_prime(i, x, N)*psi_prime(j, x, N)
-            A[i-1, N+j-2]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
+            A[i-1, N-1+j]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
             
-    for i in range(1,N):
-        for j in range(1,N):
+    for i in range(N+1):
+        for j in range(1, N):
             h = lambda x : a(x)*psi_prime(i, x, N)*phi_prime(j, x, N)
-            A[N+i-2, j-1]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
+            A[N-1+i, j-1]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
             
-    for i in range(1,N):
-        for j in range(1,N):
+    for i in range(N+1):
+        for j in range(N+1):
             h = lambda x : a(x)*psi_prime(i, x, N)*psi_prime(j, x, N)
-            A[N+i-2, N+j-2]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
+            A[N-1+i, N-1+j]=integrate(h,t_x(i-1, N),t_x(i+1, N), P)
             
     return A
 
 def assemble_B(N, P, R=1.):    
-    B = lil_matrix((2*N-2,1))        
-    for i in range(1,N):
+    B = lil_matrix((2*N,1))        
+    for i in range(1, N):
         g = lambda x : phi(i, x, N)*f(x)
         B[i-1]=integrate(g,t_x(i-1, N),t_x(i+1, N), P)
-    for i in range(1,N):
+    for i in range(N+1):
         g = lambda x : psi(i, x, N)*f(x)
-        B[N+i-2]=integrate(g,t_x(i-1, N),t_x(i+1, N), P)
+        B[N-1+i]=integrate(g,t_x(i-1, N),t_x(i+1, N), P)
     return B
 
 def assemble_U(N, P, R=1.):
@@ -146,9 +157,10 @@ def approximate_solution(x, U, N, P, R=1.):
     Returns the approximate solution at point x
     '''
     s=0
-    for i in range(1,N):
+    for i in range(1, N):
         s+=U[i-1]*phi(i, x, N)
-        s+=U[N+i-2]*psi(i, x, N)
+    for i in range(N+1):
+        s+=U[N-1+i]*psi(i, x, N)
     return s    
     
 
@@ -194,8 +206,8 @@ L2_relative_error_Tab=[]
     
 fig = plt.figure()
 
-plt.xlabel("Logarithme de la taille de la base d'éléments finis")
-plt.ylabel("Logarithme de l'erreur relative en norme L2")
+plt.xlabel("Logarithm of the step")
+plt.ylabel("Logarithm of the relative error in norm L2")
 
 # P is the number of points used in the function "integrate" in a interval of the form [t_x(i), t_x(i+1)]
 P = 100
@@ -203,18 +215,18 @@ P = 100
 p = 0
 
 X = np.linspace(0, np.exp(-p), 1000)
-tab_N = [n for n in range(3,20)]
+tab_N = [n for n in range(3,40)]
 for N in tab_N:
     print("N = ",N)
     U = assemble_U(N, P)
-#    dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, P)
-#    L2_relative_error_Tab.append(L2_relative_error(anal_sol_interpolated, dif_sol_anal_et_app, U, 0, np.exp(-p), N))
-    plt.plot(X, [approximate_solution(x, U, N, P) for x in X])
+    dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, P)
+    L2_relative_error_Tab.append(L2_relative_error(anal_sol_interpolated, dif_sol_anal_et_app, U, 0, np.exp(-p), N))
+#    plt.plot(X, [approximate_solution(x, U, N, P) for x in X])
 
-#plt.plot(np.log(tab_N), np.log(L2_relative_error_Tab))
+plt.plot(-np.log(tab_N), np.log(L2_relative_error_Tab))
 
 #
-#Y_analytique = [solution_analytique_interpolee(x) for x in X]
+#Y_analytique = [anal_sol_interpolated(x) for x in X]
 #plt.plot(X, Y_analytique, color='r')
 
 #--------------------------------------------------------------------------
