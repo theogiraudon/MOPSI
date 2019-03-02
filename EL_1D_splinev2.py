@@ -207,7 +207,7 @@ L2_relative_error_Tab=[]
 fig = plt.figure()
 
 plt.xlabel("Logarithm of the step")
-plt.ylabel("Logarithm of the relative error in norm L2")
+plt.ylabel("Logarithm of the L2 norm of the relative error")
 
 # P is the number of points used in the function "integrate" in a interval of the form [t_x(i), t_x(i+1)]
 P = 100
@@ -215,7 +215,7 @@ P = 100
 p = 0
 
 X = np.linspace(0, np.exp(-p), 1000)
-tab_N = [n for n in range(3,40)]
+tab_N = [n for n in range(3,15)]
 for N in tab_N:
     print("N = ",N)
     U = assemble_U(N, P)

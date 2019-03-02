@@ -132,12 +132,13 @@ def L2_relative_error(g_anal, g, U, a, b, N, P_L2=N*20, R=1.):
 
 #--------------------------------------------------------------------------
 
+
 L2_relative_error_Tab=[]
     
 fig = plt.figure()
 
-plt.xlabel("Logarithme de la taille de la base d'éléments finis")
-plt.ylabel("Logarithme de l'erreur relative en norme L2")
+plt.xlabel("Logarithm of the step")
+plt.ylabel("Logarithm of the L2 norm of the relative error")
 
 # P is the number of points used in the function "integrate" in a interval of the form [t_x(i), t_x(i+1)]
 P = 100
@@ -152,7 +153,7 @@ for N in tab_N:
     dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, P)
     L2_relative_error_Tab.append(L2_relative_error(anal_sol_interpolated, dif_sol_anal_et_app, U, 0, np.exp(-p), N))
 
-plt.plot(np.log(tab_N), np.log(L2_relative_error_Tab))
+plt.plot(-np.log(tab_N), np.log(L2_relative_error_Tab))
 
 #
 #Y_analytique = [solution_analytique_interpolee(x) for x in X]

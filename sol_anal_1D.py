@@ -10,8 +10,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.
-N_max=15
-P_max=100
+N_max=100
+P_max=30
 
 def integrate(h, a, b):
     s = 0
