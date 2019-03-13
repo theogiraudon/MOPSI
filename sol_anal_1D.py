@@ -1,7 +1,6 @@
 #---- importations de librairies ------
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 np.set_printoptions(precision=4) # pour joli affichage des matrices
 
 #--------------------------------
@@ -10,8 +9,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.
-N_max=100
-P_max=30
+N_max=300
+P_max=150
 
 def integrate(h, a, b):
     s = 0
@@ -37,26 +36,26 @@ g = lambda t : -inv_a(t)*(integrate(f,t,1))
 u1 = integrate(g,0,1)
 u1 /= -integrate(inv_a,0,1)
 
-def solution_analytique(x):
+def analytical_solution(x):
     return integrate(g,x,1) + u1*integrate(inv_a,x,1)
 
-#file = open("Val_sol_anal.txt","w")
-#
-#for i in range(N_max*P_max):
-#    file.write(str(solution_analytique(i/(N_max*P_max))))
-#    file.write("\n")
-#    
-#file.write(str(solution_analytique(1)))
-#file.close()
+def analytical_derivative(x):
+    return -(g(x) + u1*inv_a(x))
 
 T=[]
+T_der=[]
 
-for i in range(N_max*P_max):
-    T.append(solution_analytique(i/(N_max*P_max)))
+for i in range(1,N_max*P_max):
+    T.append(analytical_solution(i/(N_max*P_max)))
+    
+for i in range(1,N_max*P_max):
+    T_der.append(analytical_derivative(i/(N_max*P_max)))
+        
     
 np.save("Val_sol_anal_1D.npy",T)
+np.save("Val_der_anal_1D.npy",T_der)
 
 #plot_end = 1
 #
 #X = np.linspace(0,plot_end,1000)
-#plt.plot(X,solution_analytique(X))
+#plt.plot(X,analytical_solution(X))

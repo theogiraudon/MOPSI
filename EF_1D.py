@@ -16,8 +16,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 R = 1.
 
 # Paramètres utilisés pour le calcul numérique de la solution analytique
-N_max=15
-P_max=100
+N_max=300
+P_max=150
 
 def integrate(h, a, b, P):
     '''
@@ -94,6 +94,16 @@ def approximate_solution(x, U, N, P, R=1.):
         s+=U[i]*phi(i+1, x, N)
     return s    
 
+
+def approximate_derivative(x, U, N, P, R=1.):
+    '''
+    Returns the approximate solution at point x
+    '''
+    s=0
+    for i in range(N-1):
+        s+=U[i]*phi_prime(i+1, x, N)
+    return s    
+
 #--------------------------------------------------------------------------
 #
 #file = open("Val_sol_anal.txt","r")
@@ -110,6 +120,10 @@ print("Loading the table of the values of the analytic solution...")
 tab_sol_anal = np.load("Val_sol_anal_1D.npy")
 print("Loaded")
 
+print("Loading the table of the values of the analytic derivative...")
+tab_sol_der = np.load("Val_der_anal_1D.npy")
+print("Loaded")
+
 def anal_sol_interpolated(x):
     '''
     Return an approximation of the analytical solution a point x using an interpolation
@@ -120,21 +134,38 @@ def anal_sol_interpolated(x):
         i = int(x*N_max*P_max)
         return tab_sol_anal[i]
 
+def anal_der_interpolated(x):
+    '''
+    Return an approximation of the analytical derivative a point x using an interpolation
+    '''
+    if x==1:
+        return tab_sol_der[-1]
+    else:
+        i = int(x*N_max*P_max)
+        return tab_sol_der[i]
+
 #--------------------------------------------------------------------------
 
 def L2_norm(h, a, b, P_L2):
     h_squared = lambda x : h(x)**2
     return np.sqrt(integrate(h_squared, a, b, P_L2))
 
-def L2_relative_error(g_anal, g, U, a, b, N, P_L2=N*20, R=1.):
+def L2_relative_error(g_anal, g, U, a, b, N, R=1.):
+    P_L2=N*20
     dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, 50, R)
     return L2_norm(dif_sol_anal_et_app, a, b, P_L2)/L2_norm(g_anal, a, b, P_L2)    
+
+def L2_relative_error_der(g_anal, g, U, a, b, N, R=1.):
+    P_L2=N*20
+    dif_der_anal_et_app = lambda x : anal_der_interpolated(x) - approximate_solution(x, U, N, 50, R)
+    return L2_norm(dif_der_anal_et_app, a, b, P_L2)/L2_norm(g_anal, a, b, P_L2)    
+
 
 #--------------------------------------------------------------------------
 
 
 L2_relative_error_Tab=[]
-    
+L2_relative_error_der_Tab=[]    
 fig = plt.figure()
 
 plt.xlabel("Logarithm of the step")
@@ -150,14 +181,21 @@ tab_N = [n for n in range(3,20)]
 for N in tab_N:
     print("N = ",N)
     U = assemble_U(N, P)
-    dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, P)
-    L2_relative_error_Tab.append(L2_relative_error(anal_sol_interpolated, dif_sol_anal_et_app, U, 0, np.exp(-p), N))
+#    dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, P)
+#    L2_relative_error_Tab.append(L2_relative_error(anal_sol_interpolated, dif_sol_anal_et_app, U, 0, np.exp(-p), N))
+    dif_der_anal_et_app = lambda x : anal_der_interpolated(x) - approximate_derivative(x, U, N, P)
+    L2_relative_error_der_Tab.append(L2_relative_error_der(anal_der_interpolated, dif_der_anal_et_app, U, 0, np.exp(-p), N))
 
-plt.plot(-np.log(tab_N), np.log(L2_relative_error_Tab))
-
+plt.plot(-np.log(tab_N), np.log(L2_relative_error_der_Tab))
+plt.show()
 #
-#Y_analytique = [solution_analytique_interpolee(x) for x in X]
-#plt.plot(X, Y_analytique, color='r')
+
+Y_analytical_sol = [anal_sol_interpolated(x) for x in X]
+plt.plot(X, Y_analytical_sol, color='r')
+plt.show()
+
+Y_analytical_der = [anal_der_interpolated(x) for x in X]
+plt.plot(X, Y_analytical_der, color='r')
 
 #--------------------------------------------------------------------------
 
