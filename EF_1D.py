@@ -24,8 +24,8 @@ def integrate(h, a, b, P):
     Integrate the function h between a and b with a method of rectangles with P points
     '''
     s = 0
-    step = (b-a)/(2*P)
-    for i in range(2*P):
+    step = (b-a)/P
+    for i in range(P-1):
         s += step*h(a+step/2+i*step)
     return s
     
@@ -85,7 +85,7 @@ def assemble_U(N, P, R=1.):
     U = spsolve(A, B)
     return U
 
-def approximate_solution(x, U, N, P, R=1.):
+def approximate_solution(x, U, N, R=1.):
     '''
     Returns the approximate solution at point x
     '''
@@ -95,7 +95,7 @@ def approximate_solution(x, U, N, P, R=1.):
     return s    
 
 
-def approximate_derivative(x, U, N, P, R=1.):
+def approximate_derivative(x, U, N, R=1.):
     '''
     Returns the approximate solution at point x
     '''
@@ -150,52 +150,55 @@ def L2_norm(h, a, b, P_L2):
     h_squared = lambda x : h(x)**2
     return np.sqrt(integrate(h_squared, a, b, P_L2))
 
-def L2_relative_error(g_anal, g, U, a, b, N, R=1.):
+def L2_relative_error(U, a, b, N, R=1.):
     P_L2=N*20
-    dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, 50, R)
-    return L2_norm(dif_sol_anal_et_app, a, b, P_L2)/L2_norm(g_anal, a, b, P_L2)    
+    dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, R)
+    return L2_norm(dif_sol_anal_et_app, a, b, P_L2)/L2_norm(anal_sol_interpolated, a, b, P_L2)    
 
-def L2_relative_error_der(g_anal, g, U, a, b, N, R=1.):
+def L2_relative_error_der(U, a, b, N, R=1.):
     P_L2=N*20
-    dif_der_anal_et_app = lambda x : anal_der_interpolated(x) - approximate_solution(x, U, N, 50, R)
-    return L2_norm(dif_der_anal_et_app, a, b, P_L2)/L2_norm(g_anal, a, b, P_L2)    
+    dif_der_anal_et_app = lambda x : anal_der_interpolated(x) - approximate_derivative(x, U, N, R)
+    return L2_norm(dif_der_anal_et_app, a, b, P_L2)/L2_norm(anal_der_interpolated, a, b, P_L2)    
 
 
 #--------------------------------------------------------------------------
 
 
-L2_relative_error_Tab=[]
-L2_relative_error_der_Tab=[]    
 fig = plt.figure()
 
 plt.xlabel("Logarithm of the step")
 plt.ylabel("Logarithm of the L2 norm of the relative error")
 
 # P is the number of points used in the function "integrate" in a interval of the form [t_x(i), t_x(i+1)]
-P = 100
+P = 200
 # p allows us to evaluate the relative error on a smaller interval
-p = 0
+for p in range(3):    
+    print("On se place sur l'intervalle (0",np.exp(-p), ")")
+    L2_relative_error_Tab=[]
+    L2_relative_error_der_Tab=[]    
+    X = np.linspace(0, np.exp(-p), 1000)
+    X = X[:-1]
+    tab_N = range(3,50)
+    for N in tab_N:
+        U = assemble_U(N, P)
+    #    L2_relative_error_Tab.append(L2_relative_error(U, 0, np.exp(-p), N))
+        L2_relative_error_der_Tab.append(L2_relative_error_der(U, 0, np.exp(-p), N))
+    
 
-X = np.linspace(0, np.exp(-p), 1000)
-tab_N = [n for n in range(3,20)]
-for N in tab_N:
-    print("N = ",N)
-    U = assemble_U(N, P)
-#    dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, P)
-#    L2_relative_error_Tab.append(L2_relative_error(anal_sol_interpolated, dif_sol_anal_et_app, U, 0, np.exp(-p), N))
-    dif_der_anal_et_app = lambda x : anal_der_interpolated(x) - approximate_derivative(x, U, N, P)
-    L2_relative_error_der_Tab.append(L2_relative_error_der(anal_der_interpolated, dif_der_anal_et_app, U, 0, np.exp(-p), N))
-
-plt.plot(-np.log(tab_N), np.log(L2_relative_error_der_Tab))
-plt.show()
+    plt.plot(X, [approximate_derivative(x, U, N) for x in X])    
+    plt.plot(X, [anal_der_interpolated(x) for x in X])    
+    plt.show()
+    
+    plt.plot(-np.log(tab_N), np.log(L2_relative_error_der_Tab))
+    plt.show()
 #
 
-Y_analytical_sol = [anal_sol_interpolated(x) for x in X]
-plt.plot(X, Y_analytical_sol, color='r')
-plt.show()
-
-Y_analytical_der = [anal_der_interpolated(x) for x in X]
-plt.plot(X, Y_analytical_der, color='r')
+#Y_analytical_sol = [anal_sol_interpolated(x) for x in X]
+#plt.plot(X, Y_analytical_sol, color='r')
+#plt.show()
+#
+#Y_analytical_der = [anal_der_interpolated(x) for x in X]
+#plt.plot(X, Y_analytical_der, color='r')
 
 #--------------------------------------------------------------------------
 
