@@ -17,8 +17,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 R = 1.
 
 # Paramètres utilisés pour le calcul numérique de la solution analytique
-N_max=300
-P_max=150
+N_max=500
+P_max=200
 
 def integrate(h, a, b, P):
     '''

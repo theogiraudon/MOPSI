@@ -17,8 +17,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 R = 1.
 
 # Paramètres utilisés pour le calcul numérique de la solution analytique
-N_max=300
-P_max=150
+N_max=500
+P_max=200
 
 def integrate(h, a, b, P):
     '''
@@ -172,32 +172,41 @@ plt.ylabel("Logarithm of the L2 norm of the relative error")
 
 # P is the number of points used in the function "integrate" in a interval of the form [t_x(i), t_x(i+1)]
 P = 50
-# p allows us to evaluate the relative error on a smaller interval
-for p in range(3,4):    
-    print("On se place sur l'intervalle (0, {})".format(np.exp(-p)))
-    L2_relative_error_Tab=[]
-    L2_relative_error_der_Tab=[]    
-    X = np.linspace(0, np.exp(-p), 1000)
-    X = X[:-1]
-    tab_N = range(300,301)
-    for N in tab_N:
-        t1 = time.time()
-        U = assemble_U(N, P)
-        t2 = time.time()
-        print("Temps de calcul pour N = {} : {} secondes".format(N, t2-t1))
-    #    L2_relative_error_Tab.append(L2_relative_error(U, 0, np.exp(-p), N))
-        L2_relative_error_der_Tab.append(L2_relative_error_der(U, 0, np.exp(-p), N))
-    
+range_p = 4
+L2_relative_error_Tab=[]
+L2_relative_error_der_Tab=[]
 
-    plt.plot(X, [approximate_solution(x, U, N) for x in X])    
-    plt.plot(X, [anal_sol_interpolated(x) for x in X])    
-    plt.show()
-    plt.plot(X, [approximate_derivative(x, U, N) for x in X])    
-    plt.plot(X, [anal_der_interpolated(x) for x in X])    
-    plt.show()
+for p in range(range_p):
+    L2_relative_error_der_Tab.append([])    
     
-    #plt.plot(-np.log(tab_N), np.log(L2_relative_error_der_Tab))
-    #plt.show()
+tab_N = np.floor(np.exp(np.linspace(0,4,40)))
+tab_N = np.sort(list(set(tab_N)))
+tab_N = [int(N) for N in tab_N]
+for N in tab_N:
+    t1 = time.time()
+    U = assemble_U(N, P)
+    t2 = time.time()
+    print("Computation time for N = {} : {} seconds".format(N, t2-t1))
+    #    L2_relative_error_Tab.append(L2_relative_error(U, 0, np.exp(-p), N))
+    for p in range(range_p):
+        L2_relative_error_der_Tab[p].append(L2_relative_error_der(U, 0, np.exp(-p), N))
+    
+#N=100    
+#U = assemble_U(N, P)
+#X = np.linspace(0,1,1000)
+#X = X[:-1]
+#
+#plt.plot(X, [approximate_solution(x, U, N) for x in X])    
+#plt.plot(X, [anal_sol_interpolated(x) for x in X])    
+#plt.show()
+#plt.plot(X, [approximate_derivative(x, U, N) for x in X])    
+#plt.plot(X, [anal_der_interpolated(x) for x in X])    
+#plt.show()
+#    
+for p in range(range_p):
+    print("p is equal to : {}".format(p))
+    plt.plot(-np.log(tab_N), np.log(L2_relative_error_der_Tab[p]))
+    plt.show()
 #
 
 #Y_analytical_sol = [anal_sol_interpolated(x) for x in X]
