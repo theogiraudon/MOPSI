@@ -9,8 +9,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 #
 #--------------------------------
 R = 1.
-N_max=300
-P_max=150
+N_max=500
+P_max=200
 
 def integrate(h, a, b):
     s = 0
@@ -32,25 +32,34 @@ def f(x):
     return 1.
 
 inv_a = lambda x : 1/a(x)
-g = lambda t : -inv_a(t)*(integrate(f,t,1))
+g = lambda t : inv_a(t)*(integrate(f,t,1))
 u1 = integrate(g,0,1)
 u1 /= -integrate(inv_a,0,1)
 
 def analytical_solution(x):
-    return integrate(g,x,1) + u1*integrate(inv_a,x,1)
+    return - integrate(g,x,1) - u1*integrate(inv_a,x,1)
 
 def analytical_derivative(x):
-    return -(g(x) + u1*inv_a(x))
+    return g(x) + u1*inv_a(x)
 
 T=[]
 T_der=[]
 
+print("Computation of the analytical solution ", end="", flush=True)
 for i in range(1,N_max*P_max):
+    if i%(N_max*P_max//10)==0:
+        print("#", end="", flush=True)
     T.append(analytical_solution(i/(N_max*P_max)))
     
+print("[DONE]")
+    
+print("Computation of the analytical derivative ", end="", flush=True)
 for i in range(1,N_max*P_max):
+    if i%(N_max*P_max//10)==0:
+         print("#", end="", flush=True)
     T_der.append(analytical_derivative(i/(N_max*P_max)))
         
+print("[DONE]")
     
 np.save("Val_sol_anal_1D.npy",T)
 np.save("Val_der_anal_1D.npy",T_der)

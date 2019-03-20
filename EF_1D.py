@@ -1,6 +1,7 @@
 #---- importations de librairies ------
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 #from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
@@ -24,8 +25,8 @@ def integrate(h, a, b, P):
     Integrate the function h between a and b with a method of rectangles with P points
     '''
     s = 0
-    step = (b-a)/P
-    for i in range(P-1):
+    step = (b-a)/(2*P)
+    for i in range(2*P):
         s += step*h(a+step/2+i*step)
     return s
     
@@ -170,27 +171,33 @@ plt.xlabel("Logarithm of the step")
 plt.ylabel("Logarithm of the L2 norm of the relative error")
 
 # P is the number of points used in the function "integrate" in a interval of the form [t_x(i), t_x(i+1)]
-P = 200
+P = 50
 # p allows us to evaluate the relative error on a smaller interval
-for p in range(3):    
-    print("On se place sur l'intervalle (0",np.exp(-p), ")")
+for p in range(3,4):    
+    print("On se place sur l'intervalle (0, {})".format(np.exp(-p)))
     L2_relative_error_Tab=[]
     L2_relative_error_der_Tab=[]    
     X = np.linspace(0, np.exp(-p), 1000)
     X = X[:-1]
-    tab_N = range(3,50)
+    tab_N = range(300,301)
     for N in tab_N:
+        t1 = time.time()
         U = assemble_U(N, P)
+        t2 = time.time()
+        print("Temps de calcul pour N = {} : {} secondes".format(N, t2-t1))
     #    L2_relative_error_Tab.append(L2_relative_error(U, 0, np.exp(-p), N))
         L2_relative_error_der_Tab.append(L2_relative_error_der(U, 0, np.exp(-p), N))
     
 
+    plt.plot(X, [approximate_solution(x, U, N) for x in X])    
+    plt.plot(X, [anal_sol_interpolated(x) for x in X])    
+    plt.show()
     plt.plot(X, [approximate_derivative(x, U, N) for x in X])    
     plt.plot(X, [anal_der_interpolated(x) for x in X])    
     plt.show()
     
-    plt.plot(-np.log(tab_N), np.log(L2_relative_error_der_Tab))
-    plt.show()
+    #plt.plot(-np.log(tab_N), np.log(L2_relative_error_der_Tab))
+    #plt.show()
 #
 
 #Y_analytical_sol = [anal_sol_interpolated(x) for x in X]

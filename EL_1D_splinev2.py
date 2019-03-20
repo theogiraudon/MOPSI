@@ -17,8 +17,8 @@ np.set_printoptions(precision=4) # pour joli affichage des matrices
 R = 1.
 
 # Paramètres utilisés pour le calcul numérique de la solution analytique
-N_max=15
-P_max=100
+N_max=300
+P_max=150
 
 def integrate(h, a, b, P):
     '''
@@ -221,13 +221,13 @@ for N in tab_N:
     U = assemble_U(N, P)
     dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, P)
     L2_relative_error_Tab.append(L2_relative_error(anal_sol_interpolated, dif_sol_anal_et_app, U, 0, np.exp(-p), N))
-#    plt.plot(X, [approximate_solution(x, U, N, P) for x in X])
+    plt.plot(X, [approximate_solution(x, U, N, P) for x in X])
 
-plt.plot(-np.log(tab_N), np.log(L2_relative_error_Tab))
+#plt.plot(-np.log(tab_N), np.log(L2_relative_error_Tab))
 
-#
-#Y_analytique = [anal_sol_interpolated(x) for x in X]
-#plt.plot(X, Y_analytique, color='r')
+
+Y_analytique = [anal_sol_interpolated(x) for x in X]
+plt.plot(X, Y_analytique, color='r')
 
 #--------------------------------------------------------------------------
 
