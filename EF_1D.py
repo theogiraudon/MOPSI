@@ -106,16 +106,6 @@ def approximate_derivative(x, U, N, R=1.):
     return s    
 
 #--------------------------------------------------------------------------
-#
-#file = open("Val_sol_anal.txt","r")
-#
-#def recuperation_tableau_sol_anal():
-#    tab_str=[]
-#    for c in file:
-#        tab_str.append(float(c))
-#    return tab_str
-#    
-#tab_sol_anal = recuperation_tableau_sol_anal()
 
 print("Loading the table of the values of the analytic solution...")
 tab_sol_anal = np.load("Val_sol_anal_1D.npy")
@@ -124,6 +114,12 @@ print("Loaded")
 print("Loading the table of the values of the analytic derivative...")
 tab_sol_der = np.load("Val_der_anal_1D.npy")
 print("Loaded")
+
+print("\n")
+
+if len(tab_sol_anal) != N_max*P_max-1:
+    print("The analytical solution has to be computed again")
+    print("\n")
 
 def anal_sol_interpolated(x):
     '''
@@ -152,12 +148,12 @@ def L2_norm(h, a, b, P_L2):
     return np.sqrt(integrate(h_squared, a, b, P_L2))
 
 def L2_relative_error(U, a, b, N, R=1.):
-    P_L2=N*20
+    P_L2=50
     dif_sol_anal_et_app = lambda x : anal_sol_interpolated(x) - approximate_solution(x, U, N, R)
     return L2_norm(dif_sol_anal_et_app, a, b, P_L2)/L2_norm(anal_sol_interpolated, a, b, P_L2)    
 
 def L2_relative_error_der(U, a, b, N, R=1.):
-    P_L2=N*20
+    P_L2=50
     dif_der_anal_et_app = lambda x : anal_der_interpolated(x) - approximate_derivative(x, U, N, R)
     return L2_norm(dif_der_anal_et_app, a, b, P_L2)/L2_norm(anal_der_interpolated, a, b, P_L2)    
 
@@ -204,17 +200,11 @@ for N in tab_N:
 #plt.show()
 #    
 for p in range(range_p):
+    print("\n")
     print("p is equal to : {}".format(p))
     plt.plot(-np.log(tab_N), np.log(L2_relative_error_der_Tab[p]))
     plt.show()
 #
-
-#Y_analytical_sol = [anal_sol_interpolated(x) for x in X]
-#plt.plot(X, Y_analytical_sol, color='r')
-#plt.show()
-#
-#Y_analytical_der = [anal_der_interpolated(x) for x in X]
-#plt.plot(X, Y_analytical_der, color='r')
 
 #--------------------------------------------------------------------------
 
