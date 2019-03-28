@@ -68,7 +68,7 @@ def L2_relative_derivative_error(begin, end, N, P, U):
 nb_N = 5
 max_N = 100
 p_list = [p for p in range(4)] # Errors will be displayed in the [0, e^{-p}] interval.
-N_list = [int(np.exp(k) / np.exp(nb_N) * max_N) for k in range(1, nb_N + 1)]
+N_list = [int(np.exp(k) / np.exp(nb_N) * max_N) for k in range(2, nb_N + 1)]
 print(N_list)
 
 # Assemble U with increasing values of N.
