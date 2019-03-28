@@ -25,13 +25,13 @@ solution_values = []
 derivative_values = []
 derivative_1 = - rectangle_midpoints(g, 0, 1, N_max, P_max) / rectangle_midpoints(inv_a, 0, 1, N_max, P_max)
 
-print("Computation of the analytic solution ", end="", flush=True)
-for i in range(1, N_max * P_max):
-    if i % (N_max * P_max // 10) == 0:
-        print("#", end="", flush=True)
-    solution_values.append(analytic_solution(i / (N_max * P_max), derivative_1))
-
-print("[DONE]")
+#print("Computation of the analytic solution ", end="", flush=True)
+#for i in range(1, N_max * P_max):
+#    if i % (N_max * P_max // 10) == 0:
+#        print("#", end="", flush=True)
+#    solution_values.append(analytic_solution(i / (N_max * P_max), derivative_1))
+#
+#print("[DONE]")
 
 print("Computation of the analytic derivative ", end="", flush=True)
 for i in range(1, N_max * P_max):
