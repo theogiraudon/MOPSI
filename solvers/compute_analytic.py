@@ -12,7 +12,7 @@ def inv_a(x):
     return 1 / a(x)
 
 def g(x):
-    return inv_a(x) * rectangle_midpoints(f, x, 1, N_max, P_max)
+    return inv_a(x) * (1 - x)
 
 def analytic_solution(x, derivative_1):
     return -(rectangle_midpoints(g, x, 1, N_max, P_max) +

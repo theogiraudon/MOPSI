@@ -19,8 +19,8 @@ def f(x):
 
 # N_max = 500
 # P_max = 200
-N_max = 500
-P_max = 200
+N_max = 10000
+P_max = 500
 P_error = 5 * P_max
-N = 200
-P = 50
+N = 2000
+P = 200

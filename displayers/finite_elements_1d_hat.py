@@ -61,7 +61,7 @@ def display_1d_hat(solution=True, derivative=True):
             print("Loading analytic derivative values...", end="")
             derivative_values = np.load("data/analytic_derivative_{}_{}.npy".format(N_max, P_max))
             print("Loaded")
-            X = np.linspace(0, 1, derivative_values.shape[0], endpoint=False)
+            X = np.linspace(0, 1, 100000, endpoint=False)
             plt.plot(X, [analytic_derivative(x, derivative_values) for x in X])
             plt.plot(X, [approximate_derivative(x, U, N) for x in X])
             plt.show()
