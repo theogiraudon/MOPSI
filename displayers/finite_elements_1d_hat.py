@@ -68,68 +68,139 @@ def display_1d_hat(solution=True, derivative=True):
 
 # ---- Error display ----
 
-def display_1d_hat_errors(solution=True, derivative=True):
+def display_1d_hat_errors(solution=True, derivative=True, var='N'):
     fig = plt.figure()
-    nb_N = 20
-    max_N = 250
     p_list = [p for p in range(4)] # Errors will be displayed in the [0, e^{-p}] interval.
-    N_list = [int(np.exp(k) / np.exp(nb_N) * max_N) + 2 for k in range(2, nb_N + 1)] # N needs to be above 2.
-    N_list = np.sort(list(set(N_list))) # We remove the repetition of N
-    N_list = [int(N) for N in N_list]
 
-    # Assemble U with increasing values of N.
-    U_list = []
-    for N in N_list:
-        t1 = time()
-        U = assemble_U(N, P)
-        t2 = time()
-        print("Computation time (N = {}, P = {}) : {} seconds".format(N, P, t2 - t1),flush=True)
-        U_list.append(U)
+    if var=='N':
+        nb_N = 38
+        max_N = 250
 
-    if solution:
-        print("Loading analytic solution values...", end="")
-        solution_values = np.load("data/analytic_solution_{}_{}.npy".format(N_max, P_max))
-        print("Loaded")
-        for p in p_list:
-            L2_relative_solution_errors = []
-            for N_index in range(len(N_list)):
-                L2_relative_solution_errors.append(
-                    L2_relative_solution_error(
-                        0,
-                        np.exp(-p),
-                        N_list[N_index],
-                        P_error,
-                        U_list[N_index],
-                        solution_values
+        N_list = [int(np.exp(0.1*k)) + 2 for k in range(2, nb_N + 1)] # N needs to be above 2.
+        N_list = np.sort(list(set(N_list))) # We remove the repetition of N
+        N_list = [int(N_index) for N_index in N_list]
+
+        # Assemble U with increasing values of N.
+        U_list = []
+        for N_index in N_list:
+            t1 = time()
+            U = assemble_U(N_index, P)
+            t2 = time()
+            print("Computation time (N = {}, P = {}) : {} seconds".format(N_index, P, t2 - t1),flush=True)
+            U_list.append(U)
+
+        if solution:
+            print("Loading analytic solution values...", end="")
+            solution_values = np.load("data/analytic_solution_{}_{}.npy".format(N_max, P_max))
+            print("Loaded")
+            for p in p_list:
+                L2_relative_solution_errors = []
+                for N_index in range(len(N_list)):
+                    L2_relative_solution_errors.append(
+                        L2_relative_solution_error(
+                            0,
+                            np.exp(-p),
+                            N_list[N_index],
+                            P_error,
+                            U_list[N_index],
+                            solution_values
+                        )
                     )
-                )
-            print("Error display interval : [0, e^-{}]".format(p))
-            plt.title("Relative solution error (p = {})".format(p))
-            plt.xlabel("Step (log)")
-            plt.ylabel("Error L^2 norm (log)")
-            plt.plot(-np.log(N_list), np.log(L2_relative_solution_errors))
-            plt.show()
+                print("Error display interval : [0, e^-{}]".format(p))
+                plt.title("Relative solution error (p = {})".format(p))
+                plt.xlabel("Step (log)")
+                plt.ylabel("Error L^2 norm (log)")
+                plt.plot(-np.log(N_list), np.log(L2_relative_solution_errors))
+                plt.show()
+                plt.savefig('Solution_errorN_p{}_P{}'.format(p, P))
 
-    if derivative:
-        print("Loading analytic derivative values...", end="",flush=True)
-        derivative_values = np.load("data/analytic_derivative_{}_{}.npy".format(N_max, P_max))
-        print("Loaded")
-        for p in p_list:
-            L2_relative_derivative_errors = []
-            for N_index in range(len(N_list)):
-                L2_relative_derivative_errors.append(
-                    L2_relative_derivative_error(
-                        0,
-                        np.exp(-p),
-                        N_list[N_index],
-                        P_error,
-                        U_list[N_index],
-                        derivative_values
+        if derivative:
+            print("Loading analytic derivative values...", end="",flush=True)
+            derivative_values = np.load("data/analytic_derivative_{}_{}.npy".format(N_max, P_max))
+            print("Loaded")
+            for p in p_list:
+                L2_relative_derivative_errors = []
+                for N_index in range(len(N_list)):
+                    L2_relative_derivative_errors.append(
+                        L2_relative_derivative_error(
+                            0,
+                            np.exp(-p),
+                            N_list[N_index],
+                            P_error,
+                            U_list[N_index],
+                            derivative_values
+                        )
                     )
-                )
-            print("Error display interval : [0, e^-{}]".format(p))
-            plt.title("Relative derivative error (p = {})".format(p))
-            plt.xlabel("Step (log)")
-            plt.ylabel("Error L^2 norm (log)")
-            plt.plot(-np.log(N_list), np.log(L2_relative_derivative_errors))
-            plt.show()
+                print("Error display interval : [0, e^-{}]".format(p))
+                plt.title("Relative derivative error (p = {})".format(p))
+                plt.xlabel("Step (log)")
+                plt.ylabel("Error L^2 norm (log)")
+                plt.plot(-np.log(N_list), np.log(L2_relative_derivative_errors))
+                plt.show()
+                plt.savefig('Derivative_errorN_p{}_P{}'.format(p, P))
+    elif var=='P':
+        nb_P = 20
+        max_P = 250
+
+        P_list = [int(np.exp(0.1*k)) + 2 for k in range(2, nb_P + 1)]  # P needs to be above 2.
+        P_list = np.sort(list(set(P_list)))  # We remove the repetition of P
+        P_list = [int(P_index) for P_index in P_list]
+
+        # Assemble U with increasing values of N.
+        U_list = []
+        for P in P_list:
+            t1 = time()
+            U = assemble_U(N, P)
+            t2 = time()
+            print("Computation time (N = {}, P = {}) : {} seconds".format(N, P, t2 - t1), flush=True)
+            U_list.append(U)
+
+        if solution:
+            print("Loading analytic solution values...", end="")
+            solution_values = np.load("data/analytic_solution_{}_{}.npy".format(N_max, P_max))
+            print("Loaded")
+            for p in p_list:
+                L2_relative_solution_errors = []
+                for P_index in range(len(P_list)):
+                    L2_relative_solution_errors.append(
+                        L2_relative_solution_error(
+                            0,
+                            np.exp(-p),
+                            N,
+                            P_error,
+                            U_list[P_index],
+                            solution_values
+                        )
+                    )
+                print("Error display interval : [0, e^-{}]".format(p))
+                plt.title("Relative solution error (p = {})".format(p))
+                plt.xlabel("Sub-interval size (log)")
+                plt.ylabel("Error L^2 norm (log)")
+                plt.plot(-np.log(P_list), np.log(L2_relative_solution_errors))
+                plt.show()
+                plt.savefig('Solution_errorP_p{}_N{}'.format(p, N))
+
+        if derivative:
+            print("Loading analytic derivative values...", end="", flush=True)
+            derivative_values = np.load("data/analytic_derivative_{}_{}.npy".format(N_max, P_max))
+            print("Loaded")
+            for p in p_list:
+                L2_relative_derivative_errors = []
+                for P_index in range(len(P_list)):
+                    L2_relative_derivative_errors.append(
+                        L2_relative_derivative_error(
+                            0,
+                            np.exp(-p),
+                            N,
+                            P_error,
+                            U_list[P_index],
+                            derivative_values
+                        )
+                    )
+                print("Error display interval : [0, e^-{}]".format(p))
+                plt.title("Relative derivative error (p = {})".format(p))
+                plt.xlabel("Sub-interval size (log)")
+                plt.ylabel("Error L^2 norm (log)")
+                plt.plot(-np.log(P_list), np.log(L2_relative_derivative_errors))
+                plt.show()
+                plt.savefig('Derivative_errorP_p{}_N{}'.format(p, N))
