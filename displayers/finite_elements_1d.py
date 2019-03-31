@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from time import time
 
 from solvers.finite_elements_1d_hat import assemble_U, approximate_solution, approximate_derivative
+from solvers.finite_elements_1d_spline import assemble_U_spline, approximate_solution_spline, approximate_derivative_spline
 from core.parameters import N_max, P_max, P_error, N, P
 from core.error import L2_norm
 
@@ -45,9 +46,12 @@ def L2_relative_derivative_error(begin, end, N, P, U, derivative_values):
 
 # ---- Solution and derivative display ----
 
-def display_1d_hat(solution=True, derivative=True):
+def display_1d(ef, solution=True, derivative=True):
     if solution or derivative:
-        U = assemble_U(N, P)
+        if ef=='hat':
+            U = assemble_U(N, P)
+        elif ef=='spline':
+            U = assemble_U_spline(N, P)
         fig = plt.figure()
         if solution:
             print("Loading analytic solution values...", end="")
@@ -68,7 +72,7 @@ def display_1d_hat(solution=True, derivative=True):
 
 # ---- Error display ----
 
-def display_1d_hat_errors(solution=True, derivative=True, var='N'):
+def display_1d_errors(ef, solution=True, derivative=True, var='N'):
     fig = plt.figure()
     p_list = [p for p in range(4)] # Errors will be displayed in the [0, e^{-p}] interval.
 
@@ -84,7 +88,10 @@ def display_1d_hat_errors(solution=True, derivative=True, var='N'):
         U_list = []
         for N_index in N_list:
             t1 = time()
-            U = assemble_U(N_index, P)
+            if ef == 'hat':
+                U = assemble_U(N_index, P)
+            elif ef == 'spline':
+                U = assemble_U_spline(N_index, P)
             t2 = time()
             print("Computation time (N = {}, P = {}) : {} seconds".format(N_index, P, t2 - t1),flush=True)
             U_list.append(U)
@@ -148,11 +155,14 @@ def display_1d_hat_errors(solution=True, derivative=True, var='N'):
 
         # Assemble U with increasing values of N.
         U_list = []
-        for P in P_list:
+        for P_index in P_list:
             t1 = time()
-            U = assemble_U(N, P)
+            if ef == 'hat':
+                U = assemble_U(N, P_index)
+            elif ef == 'spline':
+                U = assemble_U_spline(N, P_index)
             t2 = time()
-            print("Computation time (N = {}, P = {}) : {} seconds".format(N, P, t2 - t1), flush=True)
+            print("Computation time (N = {}, P = {}) : {} seconds".format(N, P_index, t2 - t1), flush=True)
             U_list.append(U)
 
         if solution:
