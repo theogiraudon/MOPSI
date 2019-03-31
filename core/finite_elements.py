@@ -139,25 +139,25 @@ def psi_spline_prime(i, x, N):
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.figure()
-N = 7
-X = np.linspace(0,1,300)
-
-i=2
-plt.plot(X, [phi(i, x, N) for x in X])
-plt.savefig('../images/hat_function_example.png')
-plt.show()
-
-
-
-i=2
-plt.plot(X, [phi_spline(i, x, N) for x in X])
-plt.savefig('../images/phi_spline_function_example.png')
-plt.show()
-
-
-
-i=2
-plt.plot(X, [psi_spline(i, x, N) for x in X])
-plt.savefig('../images/psi_spline_function_example.png')
-plt.show()
+# plt.figure()
+# N = 7
+# X = np.linspace(0,1,300)
+#
+# i=2
+# plt.plot(X, [phi(i, x, N) for x in X])
+# plt.savefig('../images/hat_function_example.png')
+# plt.show()
+#
+#
+#
+# i=2
+# plt.plot(X, [phi_spline(i, x, N) for x in X])
+# plt.savefig('../images/phi_spline_function_example.png')
+# plt.show()
+#
+#
+#
+# i=2
+# plt.plot(X, [psi_spline(i, x, N) for x in X])
+# plt.savefig('../images/psi_spline_function_example.png')
+# plt.show()

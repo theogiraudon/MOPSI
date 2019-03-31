@@ -13,7 +13,7 @@ from core.integrate import rectangle_midpoints
 
 
 def assemble_A_spline(N, P):
-    A = csc_matrix((2 * N, 2 * N))
+    A = np.zeros((2 * N, 2 * N))
     for i in range(1, N):
         for j in range(1, N):
             h = lambda x: a(x) * phi_spline_prime(i, x, N) * phi_spline_prime(j, x, N)
@@ -37,7 +37,7 @@ def assemble_A_spline(N, P):
     return A
 
 def assemble_B_spline(N, P):
-    B = csc_matrix((2*N, 1))
+    B = np.zeros((2*N, 1))
     for i in range(1, N):
         g = lambda x: phi_spline(i, x, N) * f(x)
         B[i - 1] = rectangle_midpoints(g, t_x(i - 1, N), t_x(i + 1, N), N, P)
@@ -72,7 +72,7 @@ def approximate_derivative_spline(x, U, N):
     '''
     s = 0
     for i in range(1, N):
-        s += U[i - 1] * phi_prime(i, x, N)
+        s += U[i - 1] * phi_spline_prime(i, x, N)
     for i in range(N + 1):
         s += U[N - 1 + i] * psi_spline_prime(i, x, N)
     return s
