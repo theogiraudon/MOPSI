@@ -70,10 +70,12 @@ def display_1d_hat(solution=True, derivative=True):
 
 def display_1d_hat_errors(solution=True, derivative=True):
     fig = plt.figure()
-    nb_N = 5
-    max_N = 100
+    nb_N = 20
+    max_N = 250
     p_list = [p for p in range(4)] # Errors will be displayed in the [0, e^{-p}] interval.
     N_list = [int(np.exp(k) / np.exp(nb_N) * max_N) + 2 for k in range(2, nb_N + 1)] # N needs to be above 2.
+    N_list = np.sort(list(set(N_list))) # We remove the repetition of N
+    N_list = [int(N) for N in N_list]
 
     # Assemble U with increasing values of N.
     U_list = []
@@ -81,7 +83,7 @@ def display_1d_hat_errors(solution=True, derivative=True):
         t1 = time()
         U = assemble_U(N, P)
         t2 = time()
-        print("Computation time (N = {}, P = {}) : {} seconds".format(N, P, t2 - t1))
+        print("Computation time (N = {}, P = {}) : {} seconds".format(N, P, t2 - t1),flush=True)
         U_list.append(U)
 
     if solution:
@@ -109,7 +111,7 @@ def display_1d_hat_errors(solution=True, derivative=True):
             plt.show()
 
     if derivative:
-        print("Loading analytic derivative values...", end="")
+        print("Loading analytic derivative values...", end="",flush=True)
         derivative_values = np.load("data/analytic_derivative_{}_{}.npy".format(N_max, P_max))
         print("Loaded")
         for p in p_list:
