@@ -3,4 +3,4 @@ from displayers.finite_elements_1d_hat import display_1d_hat, display_1d_hat_err
 
 # compute_analytic(solution=False, derivative=True)
 # display_1d_hat(solution=False, derivative=True)
-display_1d_hat_errors(solution=False, derivative=True)
+display_1d_hat_errors(solution=False, derivative=True,var='N')
