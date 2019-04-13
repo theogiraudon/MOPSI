@@ -9,7 +9,7 @@ from time import time
 from solvers.finite_elements_1d_hat import assemble_U, approximate_solution, approximate_derivative
 from solvers.finite_elements_1d_spline import assemble_U_spline, approximate_solution_spline, approximate_derivative_spline
 from solvers.finite_elements_2d import assemble_U_2D, approximate_solution_2D, approximate_derivative_2D
-from core.parameters import N_max, P_max, P_error, N, P
+from core.parameters import N_max, P_max, P_error, N, N_x, N_y, P
 from core.error import L2_norm
 
 print("Number of main mesh intervals (analytic) : N_max = {}".format(N_max))
@@ -35,14 +35,24 @@ def analytic_derivative(x, derivative_values):
 
 # ---- 1D Hat errors ----
 
-def L2_relative_solution_error(begin, end, N, P, U, solution_values):
+def L2_relative_solution_error(ef, begin, end, N, P, U, solution_values):
     loaded_analytic_solution = lambda x : analytic_solution(x, solution_values)
-    solution_gap = lambda x : loaded_analytic_solution(x) - approximate_solution(x, U, N)
+    if ef == 'hat':
+        solution_gap = lambda x : loaded_analytic_solution(x) - approximate_solution(x, U, N)
+    elif ef == 'spline':
+        solution_gap = lambda x : loaded_analytic_solution(x) - approximate_solution_spline(x, U, N)
+    elif ef == '2D':
+        solution_gap = lambda x : loaded_analytic_solution(x) - approximate_solution_2D(x, U, N)
     return L2_norm(solution_gap, begin, end, N, P) / L2_norm(loaded_analytic_solution, begin, end, N, P)
 
-def L2_relative_derivative_error(begin, end, N, P, U, derivative_values):
+def L2_relative_derivative_error(ef, begin, end, N, P, U, derivative_values):
     loaded_analytic_derivative = lambda x : analytic_derivative(x, derivative_values)
-    derivative_gap = lambda x : loaded_analytic_derivative(x) - approximate_derivative(x, U, N)
+    if ef == 'hat':
+        derivative_gap = lambda x : loaded_analytic_derivative(x) - approximate_derivative(x, U, N)
+    elif ef == 'spline':
+        derivative_gap = lambda x : loaded_analytic_derivative(x) - approximate_derivative_spline(x, U, N)
+    elif ef == '2D':
+        derivative_gap = lambda x : loaded_analytic_derivative(x) - approximate_derivative_2D(x, U, N_x, N_y)
     return L2_norm(derivative_gap, begin, end, N, P) / L2_norm(loaded_analytic_derivative, begin, end, N, P)
 
 # ---- Solution and derivative display ----
@@ -54,7 +64,7 @@ def display(ef, solution=True, derivative=True):
         elif ef=='spline':
             U = assemble_U_spline(N, P)
         elif ef=='2D':
-            U = assemble_U_2D(N, N, P)
+            U = assemble_U_2D(N_x, N_y, P)
         fig = plt.figure()
         if solution:
             print("Loading analytic solution values...", end="")
@@ -62,7 +72,12 @@ def display(ef, solution=True, derivative=True):
             print("Loaded")
             X = np.linspace(0, 1, solution_values.shape[0], endpoint=False)
             plt.plot(X, [analytic_solution(x, solution_values) for x in X])
-            plt.plot(X, [approximate_solution(x, U, N) for x in X])
+            if ef == 'hat':
+                plt.plot(X, [approximate_solution(x, U, N) for x in X])
+            elif ef == 'spline':
+                plt.plot(X, [approximate_solution_spline(x, U, N) for x in X])
+            elif ef == '2D':
+                plt.plot(X[1:-1], [approximate_solution_2D(x, np.log(x), U, N_x, N_y) for x in X[1:-1]])
             plt.show()
         if derivative:
             print("Loading analytic derivative values...", end="")
@@ -70,12 +85,17 @@ def display(ef, solution=True, derivative=True):
             print("Loaded")
             X = np.linspace(0, 1, 100000, endpoint=False)
             plt.plot(X, [analytic_derivative(x, derivative_values) for x in X])
-            plt.plot(X, [approximate_derivative(x, U, N) for x in X])
+            if ef == 'hat':
+                plt.plot(X, [approximate_derivative(x, U, N) for x in X])
+            elif ef == 'spline':
+                plt.plot(X, [approximate_derivative_spline(x, U, N) for x in X])
+            elif ef == '2D':
+                plt.plot(X[1:-1], [approximate_derivative_2D(x, np.log(x), U, N_x, N_y) for x in X[1:-1]])
             plt.show()
 
 # ---- Error display ----
 
-def display_1d_errors(ef, solution=True, derivative=True, var='N'):
+def display_errors(ef, solution=True, derivative=True, var='N'):
     fig = plt.figure()
     p_list = [p for p in range(4)] # Errors will be displayed in the [0, e^{-p}] interval.
 
@@ -110,6 +130,7 @@ def display_1d_errors(ef, solution=True, derivative=True, var='N'):
                 for N_index in range(len(N_list)):
                     L2_relative_solution_errors.append(
                         L2_relative_solution_error(
+                            ef,
                             0,
                             np.exp(-p),
                             N_list[N_index],
@@ -135,6 +156,7 @@ def display_1d_errors(ef, solution=True, derivative=True, var='N'):
                 for N_index in range(len(N_list)):
                     L2_relative_derivative_errors.append(
                         L2_relative_derivative_error(
+                            ef,
                             0,
                             np.exp(-p),
                             N_list[N_index],
@@ -166,8 +188,6 @@ def display_1d_errors(ef, solution=True, derivative=True, var='N'):
                 U = assemble_U(N, P_index)
             elif ef == 'spline':
                 U = assemble_U_spline(N, P_index)
-            elif ef == '2D':
-                U = assemble_U_2D(N, N, P_index)
             t2 = time()
             print("Computation time (N = {}, P = {}) : {} seconds".format(N, P_index, t2 - t1), flush=True)
             U_list.append(U)
