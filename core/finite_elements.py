@@ -222,7 +222,18 @@ def tridiag(begin, end, t, g, h1, h2, N, P):
         for i in range(begin, end - 1)
     ]
 
-    return diags([main_diagonal, upper_diagonal, upper_diagonal], [0, 1, -1], format="csc")
+    bottom_diagonal = [
+        rectangle_midpoints(
+            lambda x: g(x) * h2(i, x, N) * h1(i + 1, x, N),
+            t(i, N),
+            t(i + 1, N),
+            N,
+            P
+        )
+        for i in range(begin, end - 1)
+    ]
+
+    return diags([main_diagonal, upper_diagonal, bottom_diagonal], [0, 1, -1], format="csc")
 
 
 def tridiag2(begin, end, t, g, h1, h2, N, P):
@@ -235,8 +246,23 @@ def tridiag2(begin, end, t, g, h1, h2, N, P):
             N,
             P
         )
-        for i in range(begin, end)
+        for i in range(begin, end - 1)
     ]
+
+    main_diagonal.append(rectangle_midpoints(
+            lambda x: g(x) * h1(N - 1, x, N) * h2(N - 1, x, N),
+            t(N - 1, N),
+            t(N, N),
+            N,
+            P
+        )\
+               + rectangle_midpoints(
+        lambda x: g(x) * h1(N - 1, x, N) * h2(N - 1, x, N),
+        t(0, N),
+        t(1, N),
+        N,
+        P
+    ))
 
     upper_diagonal = [
         rectangle_midpoints(
@@ -249,9 +275,20 @@ def tridiag2(begin, end, t, g, h1, h2, N, P):
         for i in range(begin, end - 1)
     ]
 
-    M = diags([main_diagonal, upper_diagonal, upper_diagonal], [0, 1, -1], format="csc")
+    bottom_diagonal = [
+        rectangle_midpoints(
+            lambda x: g(x) * h2(i, x, N) * h1(i + 1, x, N),
+            t(i + 1, N),
+            t(i + 2, N),
+            N,
+            P
+        )
+        for i in range(begin, end - 1)
+    ]
 
-    M[0,-1] = rectangle_midpoints(
+    M = diags([main_diagonal, upper_diagonal, bottom_diagonal], [0, 1, -1], format="csc")
+
+    M[0, -1] = rectangle_midpoints(
             lambda x: g(x) * h1(0, x, N) * h2(N - 1, x, N),
             t(0, N),
             t(1, N),

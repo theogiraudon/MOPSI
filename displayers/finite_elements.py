@@ -59,12 +59,17 @@ def L2_relative_derivative_error(ef, begin, end, N, P, U, derivative_values):
 
 def display(ef, solution=True, derivative=True):
     if solution or derivative:
+        t0 = time()
+        print("Assembling the matrix U...")
         if ef=='hat':
             U = assemble_U(N, P)
         elif ef=='spline':
             U = assemble_U_spline(N, P)
         elif ef=='2D':
             U = assemble_U_2D(N_x, N_y, P)
+        print("Matrix U assembled. \n")
+        print("Time used to assemble U : {}".format(time() - t0))
+
         fig = plt.figure()
         if solution:
             print("Loading analytic solution values...", end="")
@@ -83,7 +88,7 @@ def display(ef, solution=True, derivative=True):
             print("Loading analytic derivative values...", end="")
             derivative_values = np.load("data/analytic_derivative_{}_{}.npy".format(N_max, P_max))
             print("Loaded")
-            X = np.linspace(0, 1, 100000, endpoint=False)
+            X = np.linspace(0, 1, 2000, endpoint=False)
             plt.plot(X, [analytic_derivative(x, derivative_values) for x in X])
             if ef == 'hat':
                 plt.plot(X, [approximate_derivative(x, U, N) for x in X])

@@ -1,7 +1,7 @@
 from solvers.compute_analytic import compute_analytic
-from displayers.finite_elements_1d import display_1d, display_1d_errors
+from displayers.finite_elements import display, display_errors
 
 # compute_analytic(solution=False, derivative=True)
-# display_1d('hat', solution=False, derivative=True)
-display_1d('spline', solution=False, derivative=True)
-# display_1d_errors('spline', solution=False, derivative=True,var='N')
+# display('hat', solution=False, derivative=True)
+# display('2D', solution=False, derivative=True)
+# display_errors('spline', solution=False, derivative=True,var='N')

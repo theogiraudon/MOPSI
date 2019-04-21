@@ -20,10 +20,10 @@ def rectangle_midpoints(h, begin, end, N, P):
     '''
     result = 0
     step = 1 / (N * P) # Step of the mesh.
-    if begin < 0:
-        begin = 0
+    #if begin < 0:
+     #   begin = 0
     begin_point = ((begin + 1 / (2 * N * P)) // step + 1 / 2) * step # Smallest interpolation point in [begin, end].
     end_point = ((end + 1 / (2 * N * P)) // step - 1 / 2) * step     # Greatest interpolation point in [begin, end].
-    for i in range(int(round((end_point - begin_point) / step)) + 1):     # Integration interval length is preserved.
-        result += step * h(begin_point + i * step)
+    # Integration interval length is preserved.
+    result = sum([step * h(begin_point + i * step) for i in range(int(round((end_point - begin_point) / step)) + 1) ])
     return result
