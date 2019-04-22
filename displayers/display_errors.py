@@ -29,10 +29,11 @@ def display_errors(ef, var='N'):
     p_list = range(4) # Errors will be displayed in the [0, e^{-p}] interval.
 
     if var=='N':
-        nb_N = 38
+        nb_N = 25
         max_N = 250
 
-        N_list = [int(np.exp(0.1*k)) + 2 for k in range(3, nb_N + 1)]
+        N_list = [int(np.exp(0.3*k)) + 2 for k in range(3, nb_N + 1)]
+        print(max(N_list))
         N_list = np.sort(list(set(N_list))) # We remove the repetition of N
         N_list = [int(N_index) for N_index in N_list] # We transform the list of float in a list of int
         print("The list of N is : ", N_list)
@@ -48,7 +49,7 @@ def display_errors(ef, var='N'):
             elif ef == '2D':
                 U = assemble_U_2D(N_index, N_index, P)
             t2 = time()
-            print("Computation time (N = {}, P = {}) : {} seconds".format(N_index, P, t2 - t1),flush=True)
+            print("U computation time (N = {}, P = {}) : {} seconds".format(N_index, P, t2 - t1),flush=True)
             U_list.append(U)
 
         print("Loading analytic derivative values...", end="",flush=True)
@@ -57,6 +58,7 @@ def display_errors(ef, var='N'):
         for p in p_list:
             L2_relative_derivative_errors = []
             for N_index in range(len(N_list)):
+                t1 = time()
                 L2_relative_derivative_errors.append(
                     L2_relative_derivative_error(
                         ef,
@@ -68,6 +70,8 @@ def display_errors(ef, var='N'):
                         derivative_values
                     )
                 )
+                t2 = time()
+                print("Error computation time (N = {}, P = {}) : {} seconds".format(N_list[N_index], P, t2 - t1), flush=True)
             print("Error display interval : [0, e^-{}]".format(p))
             plt.title("Relative derivative error (p = {})".format(p))
             plt.xlabel("Step (log)")
