@@ -46,3 +46,21 @@ def compute_analytic(solution=True, derivative=True):
                 derivative_values.append(analytic_derivative(i / (N_max * P_max), derivative_1))
             print("[DONE]")
             np.save("data/analytic_derivative_{}_{}.npy".format(N_max, P_max), derivative_values)
+
+def analytic_solution(x, solution_values):
+    '''
+    Interpolate the analytic solution in x.
+    '''
+    i = int(x * N_max * P_max)
+    if i >= len(solution_values):
+        return 0
+    return solution_values[i]
+
+def analytic_derivative(x, derivative_values):
+    '''
+    Interpolate the analytic derivative in x.
+    '''
+    i = int(x * N_max * P_max)
+    if i >= len(derivative_values):
+        return derivative_values[-1]
+    return derivative_values[i]
