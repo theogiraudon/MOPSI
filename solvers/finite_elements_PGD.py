@@ -22,88 +22,27 @@ np.set_printoptions(precision=4)  # pour joli affichage des matrices
 
 
 # ------------------- Assemble iteration-wise constant matrix -----------------------
-
-def assemble_C(N_x, step=1.):
+def assemble_C(N_x, P):
     '''
-       Assemblage des matrices C.
-       Équivalence PGD : C[0] = D, C[1] = Mat(int(1/x * phi_i * phi_j')),
-                         C[2] = Mat(int(1/x * phi_i' * phi_j)), C[3] = M_{1/x^2}
+       Assembling the 4 matrix C
     '''
-    C = [np.zeros((N_x, N_x)) for k in range(4)]
-
-    for i in range(1, N_x + 1):
-        for k in range(1, N_x + 1):
-            h = lambda x: phi_prime(i, x, N_x + 1) * phi_prime(k, x, N_x + 1)
-            result_h = scipy.integrate.quad(h, t_x(i - 1, N_x + 1), t_x(i + 1, N_x + 1), epsrel=1e-16)
-            C[0][i - 1][k - 1] = result_h[0]
-
-    for i in range(1, N_x + 1):
-        for k in range(1, N_x + 1):
-            h = lambda x: (1 / x) * phi(i, x, N_x + 1) * phi_prime(k, x, N_x + 1)
-            result_h = scipy.integrate.quad(h, t_x(i - 1, N_x + 1), t_x(i + 1, N_x + 1), epsrel=1e-16)
-            C[1][i - 1][k - 1] = result_h[0]
-
-    for i in range(1, N_x + 1):
-        for k in range(1, N_x + 1):
-            h = lambda x: (1 / x) * phi_prime(i, x, N_x + 1) * phi(k, x, N_x + 1)
-            result_h = scipy.integrate.quad(h, t_x(i - 1, N_x + 1), t_x(i + 1, N_x + 1), epsrel=1e-16)
-            C[2][i - 1][k - 1] = result_h[0]
-
-    for i in range(1, N_x + 1):
-        for k in range(1, N_x + 1):
-            h = lambda x: (1 / x ** 2) * phi(i, x, N_x + 1) * phi(k, x, N_x + 1)
-            result_h = scipy.integrate.quad(h, t_x(i - 1, N_x + 1), t_x(i + 1, N_x + 1), epsrel=1e-16)
-            C[3][i - 1][k - 1] = result_h[0]
+    C = []
+    C.append(tridiag(1, N_x + 1, t_x, lambda x: 1, phi_prime, phi_prime, N_x + 1, P))
+    C.append(tridiag(1, N_x + 1, t_x, lambda x: 1 / x, phi, phi_prime, N_x + 1, P))
+    C.append(tridiag(1, N_x + 1, t_x, lambda x: 1 / x, phi_prime, phi, N_x + 1, P))
+    C.append(tridiag(1, N_x + 1, t_x, lambda x: 1 / x**2, phi, phi, N_x + 1, P))
 
     return C
 
-def assemble_D(N_y, step=1.):
+def assemble_D(N_y, P):
     '''
-       Assemblage des matrices D.
-       Équivalence PGD : D[0] = M_aper, D[1] = Mat(int(aper * psi_i' * psi_j)),
-                         D[2] = Mat(int(aper * psi_i * psi_j')), D[3] = D_aper
+       Assembling the 4 matrix D
     '''
-    D = [np.zeros((N_y, N_y)) for k in range(4)]
-
-    for j in range(0, N_y):
-        for l in range(0, N_y):
-            h = lambda y: a_per(y) * psi2D(j, y, N_y) * psi2D(l, y, N_y)
-            if j == (N_y - 1):
-                result_h = (scipy.integrate.quad(h, 0, t_y(1, N_y), epsrel=1e-16)[0] +
-                            scipy.integrate.quad(h, t_y(N_y - 1, N_y), 1, epsrel=1e-16)[0])
-            else:
-                result_h = scipy.integrate.quad(h, t_y(j, N_y), t_y(j + 2, N_y), epsrel=1e-16)[0]
-            D[0][j][l] = result_h
-
-    for j in range(0, N_y):
-        for l in range(0, N_y):
-            h = lambda y: a_per(y) * psi2D_prime(j, y, N_y) * psi2D(l, y, N_y)
-            if j == (N_y - 1):
-                result_h = (scipy.integrate.quad(h, 0, t_y(1, N_y), epsrel=1e-16)[0] +
-                            scipy.integrate.quad(h, t_y(N_y - 1, N_y), 1, epsrel=1e-16)[0])
-            else:
-                result_h = scipy.integrate.quad(h, t_y(j, N_y), t_y(j + 2, N_y), epsrel=1e-16)[0]
-            D[1][j][l] = result_h
-
-    for j in range(0, N_y):
-        for l in range(0, N_y):
-            h = lambda y: a_per(y) * psi2D(j, y, N_y) * psi2D_prime(l, y, N_y)
-            if j == (N_y - 1):
-                result_h = (scipy.integrate.quad(h, 0, t_y(1, N_y), epsrel=1e-16)[0] +
-                            scipy.integrate.quad(h, t_y(N_y - 1, N_y), 1, epsrel=1e-16)[0])
-            else:
-                result_h = scipy.integrate.quad(h, t_y(j, N_y), t_y(j + 2, N_y), epsrel=1e-16)[0]
-            D[2][j][l] = result_h
-
-    for j in range(0, N_y):
-        for l in range(0, N_y):
-            h = lambda y: a_per(y) * psi2D_prime(j, y, N_y) * psi2D_prime(l, y, N_y)
-            if j == (N_y - 1):
-                result_h = (scipy.integrate.quad(h, 0, t_y(1, N_y), epsrel=1e-16)[0] +
-                            scipy.integrate.quad(h, t_y(N_y - 1, N_y), 1, epsrel=1e-16)[0])
-            else:
-                result_h = scipy.integrate.quad(h, t_y(j, N_y), t_y(j + 2, N_y), epsrel=1e-16)[0]
-            D[3][j][l] = result_h
+    D = []
+    D.append(tridiag2(0, N_y, t_y, a_per, psi2D, psi2D, N_y, P))
+    D.append(tridiag2(0, N_y, t_y, a_per, psi2D_prime, psi2D, N_y, P))
+    D.append(tridiag2(0, N_y, t_y, a_per, psi2D, psi2D_prime, N_y, P))
+    D.append(tridiag2(0, N_y, t_y, a_per, psi2D_prime, psi2D_prime, N_y, P))
 
     return D
 
@@ -158,9 +97,9 @@ def assemble_A_r(S, C, D):
     '''
        Assemblage de A_r(S) vérifiant A_r(S_n)R_n = f_r^{n-1}(S_n).
     '''
-    coeff_1 = np.dot(np.dot(S, D[0]), S) * C[0]
-    coeff_2 = np.dot(np.dot(S, D[3]), S) * C[3]
-    coeff_3 = np.dot(np.dot(S, D[2]), S) * (C[1] + C[2])
+    coeff_1 = (D[0]@S)@S * C[0]
+    coeff_2 = (D[3]@S)@S * C[3]
+    coeff_3 = (D[2]@S)@S * (C[1] + C[2])
     return coeff_1 + coeff_2 + coeff_3
 
 def assemble_f_r(S, S_list, R_list, C, D, F_1, F_2):
@@ -169,21 +108,20 @@ def assemble_f_r(S, S_list, R_list, C, D, F_1, F_2):
     '''
     result = np.dot(S, F_2) * F_1
     for k in range(1, len(S_list)):
-        coeff_1 = np.dot(np.dot(S_list[k], D[0]), S) * C[0]
-        coeff_2 = np.dot(np.dot(S_list[k], D[3]), S) * C[3]
-        coeff_3 = np.dot(np.dot(S_list[k], D[1]), S) * C[2]
-        coeff_4 = np.dot(np.dot(S_list[k], D[2]), S) * C[1]
-        result -= np.dot((coeff_1 + coeff_2 + coeff_3 + coeff_4), R_list[k])
+        coeff_1 = (D[0]@S_list[k])@S * C[0]
+        coeff_2 = (D[3]@S_list[k])@S * C[3]
+        coeff_3 = (D[1]@S_list[k])@S * C[2]
+        coeff_4 = (D[2]@S_list[k])@S * C[1]
+        result -= R_list[k]@(coeff_1 + coeff_2 + coeff_3 + coeff_4)
     return result
 
 def assemble_A_s(R, C, D):
     '''
        Assemblage de A_s(R) vérifiant A_s(R_n)S_n = f_s^{n-1}(R_n).
     '''
-    print(np.dot(np.dot(R, C[0]), R))
-    coeff_1 = np.dot(np.dot(R, C[0]), R) * D[0]
-    coeff_2 = np.dot(np.dot(R, C[3]), R) * D[3]
-    coeff_3 = np.dot(np.dot(R, C[2]), R) * (D[1] + D[2])
+    coeff_1 = (C[0]@R)@R * D[0]
+    coeff_2 = (C[3]@R)@R * D[3]
+    coeff_3 = (C[2]@R)@R * (D[1] + D[2])
     return coeff_1 + coeff_2 + coeff_3
 
 def assemble_f_s(R, S_list, R_list, C, D, F_1, F_2):
@@ -192,11 +130,11 @@ def assemble_f_s(R, S_list, R_list, C, D, F_1, F_2):
     '''
     result = np.dot(R, F_1) * F_2
     for k in range(1, len(S_list)):
-        coeff_1 = np.dot(np.dot(R_list[k], C[0]), R) * D[0]
-        coeff_2 = np.dot(np.dot(R_list[k], C[3]), R) * D[3]
-        coeff_3 = np.dot(np.dot(R_list[k], C[2]), R) * D[1]
-        coeff_4 = np.dot(np.dot(R_list[k], C[1]), R) * D[2]
-        result -= np.dot((coeff_1 + coeff_2 + coeff_3 + coeff_4), S_list[k])
+        coeff_1 = (C[0]@R_list[k])@R * D[0]
+        coeff_2 = (C[3]@R_list[k])@R * D[3]
+        coeff_3 = (C[2]@R_list[k])@R * D[1]
+        coeff_4 = (C[1]@R_list[k])@R * D[2]
+        result -= S_list[k]@(coeff_1 + coeff_2 + coeff_3 + coeff_4)
     return result
 
 def init_R_S(N_x, N_y, max_rand_int=max_rand_int):
@@ -208,24 +146,24 @@ def init_R_S(N_x, N_y, max_rand_int=max_rand_int):
     return (2 * max_rand_int * np.random.rand(N_x) - max_rand_int,
             2 * max_rand_int * np.random.rand(N_y) - max_rand_int)
 
-def H_0_norm_squared(R, S, C, E):
+def H_0_norm_squared(R, S, C, D):
     '''
        Return ||R tens S||_{H_0}^2.
        Reminder : ||f||_{H_0} = ||(dx + 1/x*dy)f||_{L^2}.
     '''
-    coeff_1 = np.dot(np.dot(R, C[0]), R) * np.dot(np.dot(S, E[0]), S)
-    coeff_2 = np.dot(np.dot(R, C[3]), R) * np.dot(np.dot(S, E[3]), S)
-    coeff_3 = 2 * np.dot(np.dot(R, C[2]), R) * np.dot(np.dot(S, E[2]), S)
+    coeff_1 = (C[0]@R)@R * (D[0]@S)@S
+    coeff_2 = (C[3]@R)@R * (D[3]@S)@S
+    coeff_3 = 2 * (C[2]@R)@R * (D[2]@S)@S
     return coeff_1 + coeff_2 + coeff_3
 
-def H_0_scalar_product(R0, S0, R1, S1, C, E):
+def H_0_scalar_product(R0, S0, R1, S1, C, D):
     '''
        Return <R0 tens S0, R1 tens S1>_{H_0}.
     '''
-    coeff_1 = np.dot(np.dot(R0, C[0]), R1) * np.dot(np.dot(S0, E[0]), S1)
-    coeff_2 = np.dot(np.dot(R0, C[3]), R1) * np.dot(np.dot(S0, E[3]), S1)
-    coeff_3 = np.dot(np.dot(R0, C[2]), R1) * np.dot(np.dot(S0, E[1]), S1)
-    coeff_4 = np.dot(np.dot(R0, C[1]), R1) * np.dot(np.dot(S0, E[2]), S1)
+    coeff_1 = (C[0]@R0)@R1 * (D[0]@S0)@S1
+    coeff_2 = (C[3]@R0)@R1 * (D[3]@S0)@S1
+    coeff_3 = (C[2]@R0)@R1 * (D[1]@S0)@S1
+    coeff_4 = (C[1]@R0)@R1 * (D[2]@S0)@S1
     return coeff_1 + coeff_2 + coeff_3 + coeff_4
 
 def H_0_diff_norm_squared(R_m0, S_m0, R_m1, S_m1, C, D):
@@ -369,8 +307,8 @@ nbPoints = 1000
 
 X = np.linspace(0, 1, nbPoints)
 
-C = assemble_C(N_x)
-D = assemble_D(N_y)
+C = assemble_C(N_x, P)
+D = assemble_D(N_y, P)
 F_1 = assemble_F_1(N_x)
 F_2 = assemble_F_2(N_y,)
 U = assemble_U(C, D, N_x, N_y)
