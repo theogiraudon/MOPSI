@@ -46,7 +46,7 @@ def display(ef, begin=0, end=0, solution=True, derivative=True):
             print("Loading analytic derivative values...", end="")
             derivative_values = np.load("data/analytic_derivative_{}_{}.npy".format(N_max, P_max))
             print("Loaded")
-            X = np.linspace(begin, end, 1000, endpoint=False)
+            X = np.linspace(begin, end, 3000, endpoint=False)
             plt.plot(X, [analytic_derivative(x, derivative_values) for x in X])
             t0 = time()
             if ef == 'hat':

@@ -20,7 +20,7 @@ def f(x):
 N_max = 10000
 P_max = 500
 P_error = 5 * P_max
-N=50
+N=20
 N_x = 30
 N_y = 31
 P = 70

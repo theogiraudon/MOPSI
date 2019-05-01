@@ -30,9 +30,9 @@ def display_errors(ef, var='N'):
     p_list = range(4) # Errors will be displayed in the [0, e^{-p}] interval.
 
     if var=='N':
-        nb_N = 15
+        nb_N = 30
 
-        N_list = [int(np.exp(0.25*k)) + 2 for k in range(3, nb_N + 1)]
+        N_list = [int(np.exp(0.24*k)) + 4 for k in range(3, nb_N + 1)]
         print(max(N_list))
         N_list = np.sort(list(set(N_list))) # We remove the repetition of N
         N_list = [int(N_index) for N_index in N_list] # We transform the list of float in a list of int

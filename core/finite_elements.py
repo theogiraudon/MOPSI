@@ -399,3 +399,9 @@ def tridiag3(begin, end, t, g, h1, h2, N, P):
     )
 
     return M
+
+
+X = np.linspace(0,1,1000)
+for i in range(6):
+    plt.plot(X, [psi_spline(i, x, 5) for x in X])
+plt.show()

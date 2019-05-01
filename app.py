@@ -4,5 +4,5 @@ from displayers.display_errors import display_errors
 
 # compute_analytic(solution=False, derivative=True)
 # display('PGD', solution=False, derivative=True)
-display('spline', 0, 1, solution=False, derivative=True)
-# display_errors('PGD', var='N')
+# display('spline', 0, 1, solution=False, derivative=True)
+display_errors('spline', var='N')
