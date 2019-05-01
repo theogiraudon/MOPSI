@@ -21,11 +21,15 @@ np.set_printoptions(precision=4)  # pour joli affichage des matrices
 #
 # --------------------------------
 step = 1.              # Roughly, step of the approximation.
-N_x = 30               # Dimension of the x range approximation space.
-N_y = 31               # Dimension of the y range approximation space.
+N_x = 4               # Dimension of the x range approximation space.
+N_y = 5               # Dimension of the y range approximation space.
+
+# ------ PGD -----------
 nb_iter = 30           # Number of PGD iterations
 eps = 1e-16            # Fixed point algorithm precision
-max_rand_int = 1000    # Random coefficients picked for the PGD initialization belong to [-max_rand_int, max_rand_int]
+max_rand_int = 1000    # Random coefficients picked for the PGD initialization belong to [-max_rand_int, max_rand_int
+
+
 
 
 def t_x(i, N_x, step=1.):
@@ -139,6 +143,7 @@ def assemble_C(N_x, step=1.):
             h = lambda x: (1 / x ** 2) * phi(i, x, N_x, step) * phi(k, x, N_x, step)
             result_h = scipy.integrate.quad(h, t_x(i, N_x, step), t_x(i + 2, N_x, step), epsrel=1e-16)
             C[3][i][k] = result_h[0]
+
     return C
 
 def assemble_D(N_y, step=1.):
@@ -188,6 +193,7 @@ def assemble_D(N_y, step=1.):
             else:
                 result_h = scipy.integrate.quad(h, t_y(j, N_y, step), t_y(j + 2, N_y, step), epsrel=1e-16)[0]
             D[3][j][l] = result_h
+
     return D
 
 def assemble_F(N_x, N_y, R=1.):
@@ -208,55 +214,6 @@ def assemble_F(N_x, N_y, R=1.):
                 result_h = scipy.integrate.quad(h, t_y(j, N_y, R), t_y(j + 2, N_y, R), epsrel=1e-16)[0]
             F[K(i, j, N_y)] = result_g * result_h
     return F
-
-def assemble_E(N_y, step=1.):
-    '''
-       Assemblage des matrices E.
-       Équivalence PGD : E[0] = M_psi, E[1] = Mat(int(psi_i' * psi_j)),
-                         E[2] = Mat(int(psi_i * psi_j')), E[3] = D_psi
-    '''
-    E = [np.zeros((N_y, N_y)) for k in range(4)]
-
-    for j in range(0, N_y):
-        for l in range(0, N_y):
-            h = lambda y: psi(j, y, N_y, step) * psi(l, y, N_y, step)
-            if j == (N_y - 1):
-                result_h = (scipy.integrate.quad(h, 0, t_y(1, N_y, step), epsrel=1e-16)[0] +
-                            scipy.integrate.quad(h, t_y(N_y - 1, N_y, step), 1, epsrel=1e-16)[0])
-            else:
-                result_h = scipy.integrate.quad(h, t_y(j, N_y, step), t_y(j + 2, N_y, step), epsrel=1e-16)[0]
-            E[0][j][l] = result_h
-
-    for j in range(0, N_y):
-        for l in range(0, N_y):
-            h = lambda y: psi_prime(j, y, N_y, step) * psi(l, y, N_y, step)
-            if j == (N_y - 1):
-                result_h = (scipy.integrate.quad(h, 0, t_y(1, N_y, step), epsrel=1e-16)[0] +
-                            scipy.integrate.quad(h, t_y(N_y - 1, N_y, step), 1, epsrel=1e-16)[0])
-            else:
-                result_h = scipy.integrate.quad(h, t_y(j, N_y, step), t_y(j + 2, N_y, step), epsrel=1e-16)[0]
-            E[1][j][l] = result_h
-
-    for j in range(0, N_y):
-        for l in range(0, N_y):
-            h = lambda y: psi(j, y, N_y, step) * psi_prime(l, y, N_y, step)
-            if j == (N_y - 1):
-                result_h = (scipy.integrate.quad(h, 0, t_y(1, N_y, step), epsrel=1e-16)[0] +
-                            scipy.integrate.quad(h, t_y(N_y - 1, N_y, step), 1, epsrel=1e-16)[0])
-            else:
-                result_h = scipy.integrate.quad(h, t_y(j, N_y, step), t_y(j + 2, N_y, step), epsrel=1e-16)[0]
-            E[2][j][l] = result_h
-
-    for j in range(0, N_y):
-        for l in range(0, N_y):
-            h = lambda y: psi_prime(j, y, N_y, step) * psi_prime(l, y, N_y, step)
-            if j == (N_y - 1):
-                result_h = (scipy.integrate.quad(h, 0, t_y(1, N_y, step), epsrel=1e-16)[0] +
-                            scipy.integrate.quad(h, t_y(N_y - 1, N_y, step), 1, epsrel=1e-16)[0])
-            else:
-                result_h = scipy.integrate.quad(h, t_y(j, N_y, step), t_y(j + 2, N_y, step), epsrel=1e-16)[0]
-            E[3][j][l] = result_h
-    return E
 
 def assemble_F_1(N_x, step=1.):
     '''
@@ -359,15 +316,15 @@ def H_0_scalar_product(R0, S0, R1, S1, C, E):
     coeff_4 = np.dot(np.dot(R0, C[1]), R1) * np.dot(np.dot(S0, E[2]), S1)
     return coeff_1 + coeff_2 + coeff_3 + coeff_4
 
-def H_0_diff_norm_squared(R_m0, S_m0, R_m1, S_m1, C, E):
+def H_0_diff_norm_squared(R_m0, S_m0, R_m1, S_m1, C, D):
     '''
        Return ||(R_m1 tens S_m1) - (R_m0 tens S_m0)||_{H_0}^2.
        Reminder : ||f||_{H_0} = ||(dx + 1/x*dy)f||_{L^2}.
     '''
-    return (H_0_norm_squared(R_m1, S_m1, C, E) + H_0_norm_squared(R_m0, S_m0, C, E) -
-            2 * H_0_scalar_product(R_m0, S_m0, R_m1, S_m1, C, E))
+    return (H_0_norm_squared(R_m1, S_m1, C, D) + H_0_norm_squared(R_m0, S_m0, C, D) -
+            2 * H_0_scalar_product(R_m0, S_m0, R_m1, S_m1, C, D))
 
-def fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps, max_rand_int=max_rand_int):
+def fixed_point(C, D, F_1, F_2, R_list, S_list, N_x, N_y, eps, max_rand_int=max_rand_int):
     '''
        Return (R_n, S_n) for n >= 1.
        R is the [R_0, R_1,..., R_{n-1}] list of the consecutive iterations of the PGD algorithm.
@@ -377,7 +334,7 @@ def fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps, max_rand_int=m
     R_m0 = np.zeros(N_x)
     S_m0 = np.zeros(N_y)
     counter = 0
-    while(counter == 0 or (H_0_diff_norm_squared(R_m0, S_m0, R_m1, S_m1, C, E) > eps)):
+    while(counter == 0 or (H_0_diff_norm_squared(R_m0, S_m0, R_m1, S_m1, C, D) > eps)):
         #print("Fixed point Iteration n°", counter)
         #print("Error : ", H_0_diff_norm_squared(R_m0, S_m0, R_m1, S_m1, C, E))
         for i in range(N_x):
@@ -395,7 +352,7 @@ def fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps, max_rand_int=m
         counter += 1
     return(R_m1, S_m1)
 
-def PGD(nb_iter, C, D, E, F_1, F_2, N_x, N_y, eps=1e-16, max_rand_int=max_rand_int, step = 1.):
+def PGD(nb_iter, C, D, F_1, F_2, N_x, N_y, eps=1e-16, max_rand_int=max_rand_int, step = 1.):
     '''
        Return R_list and S_list such that U(x, y) =~ sum_k(sum_i(R_list[k][i]phi_i(x)) * sum_j(S_list[k][j]psi_j(y))
     '''
@@ -403,7 +360,7 @@ def PGD(nb_iter, C, D, E, F_1, F_2, N_x, N_y, eps=1e-16, max_rand_int=max_rand_i
     S_list = [np.zeros(N_y)]
     for n in range(nb_iter):
         print("PGD Iteration n°", n)
-        R_n, S_n = fixed_point(C, D, E, F_1, F_2, R_list, S_list, N_x, N_y, eps, max_rand_int)
+        R_n, S_n = fixed_point(C, D, F_1, F_2, R_list, S_list, N_x, N_y, eps, max_rand_int)
         R_list += [R_n]
         S_list += [S_n]
     return (R_list, S_list)
@@ -504,10 +461,9 @@ C = assemble_C(N_x, step)
 D = assemble_D(N_y, step)
 F_1 = assemble_F_1(N_x, step)
 F_2 = assemble_F_2(N_y, step)
-E = assemble_E(N_y, step)
 U = assemble_U(C, D, N_x, N_y, step)
 
-R_list1, S_list1 = PGD(nb_iter, C, D, E, F_1, F_2, N_x, N_y, eps, max_rand_int, step)
+R_list1, S_list1 = PGD(nb_iter, C, D, F_1, F_2, N_x, N_y, eps, max_rand_int, step)
 
 
 Y_analytical = np.linspace(0, 1, nbPoints)

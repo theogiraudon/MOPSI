@@ -207,12 +207,82 @@ def U_P1_energy_norm_squared(U, C, D, N_x, N_y):
        There is probably a cleaner way to implement this, using matrix products.
     '''
     result = 0
-    for i in range(N_x):
-        for j in range(N_y):
-            for k in range(N_x):
-                for l in range(N_y):
-                    result += U[K(i, j, N_y)] * U[K(k, l, N_y)] * sum([C[m][i,k] * D[m][j,l] for m in range(4)])
-    return result
+    for n in range(4):
+        for i in range(1, N_x-1):
+            for j in range(1, N_y-1):
+                result += (U[K(i, j, N_y)] * U[K(i-1, j-1, N_y)] * C[n][i,i-1] * D[n][j,j-1]
+                           + U[K(i, j, N_y)] * U[K(i, j-1, N_y)] * C[n][i,i] * D[n][j,j-1]
+                           + U[K(i, j, N_y)] * U[K(i+1, j-1, N_y)] * C[n][i,i+1] * D[n][j,j-1]
+                           + U[K(i, j, N_y)] * U[K(i-1, j, N_y)] * C[n][i,i-1] * D[n][j,j]
+                           + U[K(i, j, N_y)] * U[K(i, j, N_y)] * C[n][i,i] * D[n][j,j]
+                           + U[K(i, j, N_y)] * U[K(i+1, j, N_y)] * C[n][i,i+1] * D[n][j,j]
+                           + U[K(i, j, N_y)] * U[K(i-1, j+1, N_y)] * C[n][i,i-1] * D[n][j,j+1]
+                           + U[K(i, j, N_y)] * U[K(i, j+1, N_y)] * C[n][i,i] * D[n][j,j+1]
+                           + U[K(i, j, N_y)] * U[K(i+1, j+1, N_y)] * C[n][i,i+1] * D[n][j,j+1])
+
+            result += (U[K(i, 0, N_y)] * U[K(i-1, 0, N_y)] * C[n][i,i-1] * D[n][0,0]
+                           + U[K(i, 0, N_y)] * U[K(i, 0, N_y)] * C[n][i,i] * D[n][0,0]
+                           + U[K(i, 0, N_y)] * U[K(i+1, 0, N_y)] * C[n][i,i+1] * D[n][0,0]
+                           + U[K(i, 0, N_y)] * U[K(i-1, 1, N_y)] * C[n][i,i-1] * D[n][0,1]
+                           + U[K(i, 0, N_y)] * U[K(i, 1, N_y)] * C[n][i,i] * D[n][0,1]
+                           + U[K(i, 0, N_y)] * U[K(i+1, 1, N_y)] * C[n][i,i+1] * D[n][0,1]
+                           + U[K(i, 0, N_y)] * U[K(i - 1, N_y-1, N_y)] * C[n][i, i - 1] * D[n][0, N_y-1]
+                           + U[K(i, 0, N_y)] * U[K(i, N_y-1, N_y)] * C[n][i, i] * D[n][0, N_y-1]
+                           + U[K(i, 0, N_y)] * U[K(i + 1, N_y-1, N_y)] * C[n][i, i + 1] * D[n][0, N_y-1])
+
+            result += (U[K(i, N_y-1, N_y)] * U[K(i - 1, N_y-1, N_y)] * C[n][i, i - 1] * D[n][N_y-1, N_y-1]
+                           + U[K(i, N_y-1, N_y)] * U[K(i, N_y-1, N_y)] * C[n][i, i] * D[n][N_y-1, N_y-1]
+                           + U[K(i, N_y-1, N_y)] * U[K(i + 1, N_y-1, N_y)] * C[n][i, i + 1] * D[n][N_y-1, N_y-1]
+                           + U[K(i, N_y-1, N_y)] * U[K(i - 1, N_y-2, N_y)] * C[n][i, i - 1] * D[n][N_y-1, N_y-2]
+                           + U[K(i, N_y-1, N_y)] * U[K(i, N_y-2, N_y)] * C[n][i, i] * D[n][N_y-1, N_y-2]
+                           + U[K(i, N_y-1, N_y)] * U[K(i + 1, N_y-2, N_y)] * C[n][i, i + 1] * D[n][N_y-1, N_y-2]
+                           + U[K(i, N_y-1, N_y)] * U[K(i - 1, 0, N_y)] * C[n][i, i - 1] * D[n][N_y-1, 0]
+                           + U[K(i, N_y-1, N_y)] * U[K(i, 0, N_y)] * C[n][i, i] * D[n][N_y-1, 0]
+                           + U[K(i, N_y-1, N_y)] * U[K(i + 1, 0, N_y)] * C[n][i, i + 1] * D[n][N_y-1, 0])
+
+        for j in range(1, N_y-1):
+            result += (U[K(0, j, N_y)] * U[K(0, j-1, N_y)] * C[n][0,0] * D[n][j,j-1]
+                       + U[K(0, j, N_y)] * U[K(1, j-1, N_y)] * C[n][0,1] * D[n][j,j-1]
+                       + U[K(0, j, N_y)] * U[K(0, j, N_y)] * C[n][0,0] * D[n][j,j]
+                       + U[K(0, j, N_y)] * U[K(1, j, N_y)] * C[n][0,1] * D[n][j,j]
+                       + U[K(0, j, N_y)] * U[K(0, j+1, N_y)] * C[n][0,0] * D[n][j,j+1]
+                       + U[K(0, j, N_y)] * U[K(1, j+1, N_y)] * C[n][0,1] * D[n][j,j+1]
+                       + U[K(N_x-1, j, N_y)] * U[K(N_x-1, j-1, N_y)] * C[n][N_x-1,N_x-1] * D[n][j,j-1]
+                       + U[K(N_x-1, j, N_y)] * U[K(N_x-2, j-1, N_y)] * C[n][N_x-1,N_x-2] * D[n][j,j-1]
+                       + U[K(N_x-1, j, N_y)] * U[K(N_x-1, j, N_y)] * C[n][N_x-1,N_x-1] * D[n][j,j]
+                       + U[K(N_x-1, j, N_y)] * U[K(N_x-2, j, N_y)] * C[n][N_x-1,N_x-2] * D[n][j,j]
+                       + U[K(N_x-1, j, N_y)] * U[K(N_x-1, j+1, N_y)] * C[n][N_x-1,N_x-1] * D[n][j,j+1]
+                       + U[K(N_x-1, j, N_y)] * U[K(N_x-2, j+1, N_y)] * C[n][N_x-1,N_x-2] * D[n][j,j+1])
+
+        result += (U[K(0, 0, N_y)] * U[K(0, 0, N_y)] * C[n][0,0] * D[n][0,0]
+                   + U[K(0, 0, N_y)] * U[K(1, 0, N_y)] * C[n][0,1] * D[n][0,0]
+                   + U[K(0, 0, N_y)] * U[K(0, 1, N_y)] * C[n][0,0] * D[n][0,1]
+                   + U[K(0, 0, N_y)] * U[K(1, 1, N_y)] * C[n][0,1] * D[n][0,1]
+                   + U[K(0, N_y-1, N_y)] * U[K(0, N_y-1, N_y)] * C[n][0,0] * D[n][N_y-1,N_y-1]
+                   + U[K(0, N_y-1, N_y)] * U[K(1, N_y-1, N_y)] * C[n][0,1] * D[n][N_y-1,N_y-1]
+                   + U[K(0, N_y-1, N_y)] * U[K(0, N_y-2, N_y)] * C[n][0,0] * D[n][N_y-1,N_y-2]
+                   + U[K(0, N_y-1, N_y)] * U[K(1, N_y-2, N_y)] * C[n][0,1] * D[n][N_y-1,N_y-2]
+                   + U[K(0, 0, N_y)] * U[K(0, N_y-1, N_y)] * C[n][0,0] * D[n][0,N_y-1]
+                   + U[K(0, 0, N_y)] * U[K(1, N_y-1, N_y)] * C[n][0,1] * D[n][0,N_y-1]
+                   + U[K(0, N_y-1, N_y)] * U[K(0, 0, N_y)] * C[n][0,0] * D[n][N_y-1,0]
+                   + U[K(0, N_y-1, N_y)] * U[K(1, 0, N_y)] * C[n][0,1] * D[n][N_y-1,0]
+                   )
+
+        result += (U[K(N_x-1, 0, N_y)] * U[K(N_x-1, 0, N_y)] * C[n][N_x-1, N_x-1] * D[n][0, 0]
+                   + U[K(N_x-1, 0, N_y)] * U[K(N_x-2, 0, N_y)] * C[n][N_x-1, N_x-2] * D[n][0, 0]
+                   + U[K(N_x-1, 0, N_y)] * U[K(N_x-1, 1, N_y)] * C[n][N_x-1, N_x-1] * D[n][0, 1]
+                   + U[K(N_x-1, 0, N_y)] * U[K(N_x-2, 1, N_y)] * C[n][N_x-1, N_x-2] * D[n][0, 1]
+                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-1, N_y - 1, N_y)] * C[n][N_x-1, N_x-1] * D[n][N_y - 1, N_y - 1]
+                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-2, N_y - 1, N_y)] * C[n][N_x-1, N_x-2] * D[n][N_y - 1, N_y - 1]
+                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-1, N_y - 2, N_y)] * C[n][N_x-1, N_x-1] * D[n][N_y - 1, N_y - 2]
+                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-2, N_y - 2, N_y)] * C[n][N_x-1, N_x-2] * D[n][N_y - 1, N_y - 2]
+                   + U[K(N_x-1, 0, N_y)] * U[K(N_x-1, N_y - 1, N_y)] * C[n][N_x-1, N_x-1] * D[n][0, N_y - 1]
+                   + U[K(N_x-1, 0, N_y)] * U[K(N_x-2, N_y - 1, N_y)] * C[n][N_x-1, N_x-2] * D[n][0, N_y - 1]
+                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-1, 0, N_y)] * C[n][N_x-1, N_x-1] * D[n][N_y - 1, 0]
+                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-2, 0, N_y)] * C[n][N_x-1, N_x-2] * D[n][N_y - 1, 0]
+                   )
+
+        return result
 
 def U_PGD_energy_norm_squared(R_list, S_list, C, D):
     '''

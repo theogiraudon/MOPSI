@@ -3,11 +3,11 @@ from scipy.sparse import diags, csc_matrix
 from scipy.sparse.linalg import spsolve
 
 from core.finite_elements import tridiag, tridiag2
-from core.parameters import a_per, f, P
+from core.parameters import a_per, f, P, N_x, N_y
 from core.finite_elements import t_x, t_y, phi, phi2D, phi2D_prime, phi_prime, psi2D, psi2D_prime, K
 from core.integrate import rectangle_midpoints
 
-def assemble_C_2D(N_x, P):
+def assemble_C(N_x, P):
     '''
        Assembling the 4 matrix C
     '''
@@ -19,7 +19,7 @@ def assemble_C_2D(N_x, P):
 
     return C
 
-def assemble_D_2D(N_y, P):
+def assemble_D(N_y, P):
     '''
        Assembling the 4 matrix D
     '''
@@ -31,7 +31,7 @@ def assemble_D_2D(N_y, P):
 
     return D
 
-def assemble_F_2D(N_x, N_y, P):
+def assemble_F(N_x, N_y, P):
     '''
        Assembling the matrix F
     '''
@@ -39,11 +39,11 @@ def assemble_F_2D(N_x, N_y, P):
     h = lambda y: psi2D(0, y, N_y)
 
     int_phi = rectangle_midpoints(g, t_x(0, N_x + 1), t_x(2, N_x + 1), N_x + 1, P)
-    int_psi = rectangle_midpoints(g, t_x(0, N_x + 1), t_x(2, N_x + 1), N_x + 1, P)
+    int_psi = rectangle_midpoints(h, t_y(0, N_y), t_y(2, N_y), N_y, P)
 
     return (int_phi*int_psi)*np.ones((N_x * N_y, 1))
 
-def assemble_B_2D(C, D, N_x, N_y):
+def assemble_B(C, D, N_x, N_y):
     '''
        Assembling the matrix B
     '''
@@ -91,11 +91,11 @@ def assemble_B_2D(C, D, N_x, N_y):
 
     return B
 
-def assemble_U_2D(N_x, N_y, P):
-    C = assemble_C_2D(N_x, P)
-    D = assemble_D_2D(N_y, P)
-    B = assemble_B_2D(C, D, N_x, N_y)
-    F = assemble_F_2D(N_x, N_y, P)
+def assemble_U(N_x, N_y, P):
+    C = assemble_C(N_x, P)
+    D = assemble_D(N_y, P)
+    B = assemble_B(C, D, N_x, N_y)
+    F = assemble_F(N_x, N_y, P)
     B = csc_matrix(B)
     return spsolve(B, F)
 

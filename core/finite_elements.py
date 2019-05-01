@@ -1,7 +1,7 @@
 from core.integrate import rectangle_midpoints
 from scipy.sparse import diags
 import numpy as np
-
+import matplotlib.pyplot as plt
 """
  * Galerkin decomposition methods (hat and spline functions).
 """
@@ -98,12 +98,21 @@ def psi_spline(i, x, N):
         The spline function support equates to [x_{i-1}, x_{i+1}], where x_i is the
         ith node of the main mesh.
     """
-    if x < t_x(i + 1, N) and x >= t_x(i, N):
-        return g4((x - t_x(i, N)) / (t_x(i + 1, N) - t_x(i, N))) * (t_x(i + 1, N) - t_x(i, N))
-    elif x < t_x(i, N) and x >= t_x(i - 1, N):
-        return g3((x - t_x(i - 1, N)) / (t_x(i, N) - t_x(i - 1, N))) * (t_x(i, N) - t_x(i - 1, N))
+    if i < N:
+        if x < t_x(i + 1, N) and x >= t_x(i, N):
+            return g4((x - t_x(i, N)) / (t_x(i + 1, N) - t_x(i, N))) * (t_x(i + 1, N) - t_x(i, N))
+        elif x < t_x(i, N) and x >= t_x(i - 1, N):
+            return g3((x - t_x(i - 1, N)) / (t_x(i, N) - t_x(i - 1, N))) * (t_x(i, N) - t_x(i - 1, N))
+        else:
+            return 0
     else:
-        return 0
+        if x < t_x(1, N) and x >= 0:
+            return g4(x / t_x(1, N)) * t_x(1, N)
+        elif x < 1 and x >= t_x(N - 1, N):
+            return g3((x - t_x(N - 1, N)) / (1 - t_x(N - 1, N))) * (1 - t_x(N - 1, N))
+        else:
+            return 0
+
 
 
 def phi_spline_prime(i, x, N):
@@ -126,12 +135,20 @@ def psi_spline_prime(i, x, N):
         The spline function support equates to [x_{i-1}, x_{i+1}], where x_i is the
         ith node of the main mesh.
     """
-    if x < t_x(i + 1, N) and x >= t_x(i, N):
-        return g4_prime((x - t_x(i, N)) / (t_x(i + 1, N) - t_x(i, N)))
-    elif x < t_x(i, N) and x >= t_x(i - 1, N):
-        return g3_prime((x - t_x(i - 1, N)) / (t_x(i, N) - t_x(i - 1, N)))
+    if i < N:
+        if x < t_x(i + 1, N) and x >= t_x(i, N):
+            return g4_prime((x - t_x(i, N)) / (t_x(i + 1, N) - t_x(i, N)))
+        elif x < t_x(i, N) and x >= t_x(i - 1, N):
+            return g3_prime((x - t_x(i - 1, N)) / (t_x(i, N) - t_x(i - 1, N)))
+        else:
+            return 0
     else:
-        return 0
+        if x < t_x(1, N) and x >= 0:
+            return g4_prime(x / t_x(1, N))
+        elif x <= 1 and x >= t_x(N - 1, N):
+            return g3_prime((x - t_x(N - 1, N)) / (1 - t_x(N - 1, N)))
+        else:
+            return 0
 
 
 
@@ -298,6 +315,77 @@ def tridiag2(begin, end, t, g, h1, h2, N, P):
 
     M[-1, 0] = rectangle_midpoints(
         lambda x: g(x) * h1(N - 1, x, N) * h2(0, x, N),
+        t(0, N),
+        t(1, N),
+        N,
+        P
+    )
+
+    return M
+
+
+def tridiag3(begin, end, t, g, h1, h2, N, P):
+
+    main_diagonal = [
+        rectangle_midpoints(
+            lambda x: g(x) * h1(i, x, N) * h2(i, x, N),
+            t(i - 1, N),
+            t(i + 1, N),
+            N,
+            P
+        )
+        for i in range(begin, end - 1)
+    ]
+
+    main_diagonal.append(rectangle_midpoints(
+            lambda x: g(x) * h1(N, x, N) * h2(N, x, N),
+            t(N - 1, N),
+            t(N, N),
+            N,
+            P
+        )\
+               + rectangle_midpoints(
+        lambda x: g(x) * h1(N, x, N) * h2(N, x, N),
+        t(0, N),
+        t(1, N),
+        N,
+        P
+    ))
+
+    upper_diagonal = [
+        rectangle_midpoints(
+            lambda x: g(x) * h1(i, x, N) * h2(i + 1, x, N),
+            t(i, N),
+            t(i + 1, N),
+            N,
+            P
+        )
+        for i in range(begin, end - 1)
+    ]
+
+    bottom_diagonal = [
+        rectangle_midpoints(
+            lambda x: g(x) * h2(i, x, N) * h1(i + 1, x, N),
+            t(i, N),
+            t(i + 1, N),
+            N,
+            P
+        )
+        for i in range(begin, end - 1)
+    ]
+
+    M = diags([main_diagonal, upper_diagonal, bottom_diagonal], [0, 1, -1], format="csc")
+
+    M[0, -1] = rectangle_midpoints(
+            lambda x: g(x) * h1(1, x, N) * h2(N, x, N),
+            t(0, N),
+            t(1, N),
+            N,
+            P
+        )
+
+    M[-1, 0] = rectangle_midpoints(
+        lambda x: g(x) * h1(N, x, N) * h2(1, x, N),
         t(0, N),
         t(1, N),
         N,

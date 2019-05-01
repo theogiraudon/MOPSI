@@ -20,7 +20,12 @@ def f(x):
 N_max = 10000
 P_max = 500
 P_error = 5 * P_max
-N = 1000
+N=1000
 N_x = 30
-N_y = 30
+N_y = 31
 P = 70
+
+# ------ PGD -----------
+nb_iter = 30           # Number of PGD iterations
+eps = 1e-16            # Fixed point algorithm precision
+max_rand_int = 1000    # Random coefficients picked for the PGD initialization belong to [-max_rand_int, max_rand_int]
