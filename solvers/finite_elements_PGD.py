@@ -235,18 +235,69 @@ def U_P1_U_PGD_energy_norm_scalar_product(U, R_list, S_list, C, D, N_x, N_y):
     result = 0
     r = 0
     s = 0
-    for i in range(N_x):
-        for j in range(N_y):
-            for k in range(1, len(R_list)):
-                for n in range(4):
-                    for l in range(N_x):
-                        r += R_list[k][l] * C[n][i, l]
-                    for m in range(N_y):
-                        s += S_list[k][m] * D[n][j, m]
-
+    for k in range(1, len(R_list)):
+        for n in range(4):
+            for i in range(1, N_x - 1):
+                for j in range(1, N_y - 1):
+                    r += R_list[k][i-1] * C[n][i, i-1] + R_list[k][i] * C[n][i, i] + R_list[k][i+1] * C[n][i, i+1]
+                    s += S_list[k][j-1] * D[n][j, j-1] + S_list[k][j] * D[n][j, j] + S_list[k][j+1] * D[n][j, j+1]
                     result += U[K(i, j, N_y)] * r * s
                     r = 0
                     s = 0
+            for j in range(1, N_y - 1):
+                r += R_list[k][0] * C[n][0, 0] + R_list[k][1] * C[n][0, 1]
+                s += S_list[k][j-1] * D[n][j, j-1] + S_list[k][j] * D[n][j, j] + S_list[k][j+1] * D[n][j, j+1]
+                result += U[K(0, j, N_y)] * r * s
+                r = 0
+                s = 0
+            for j in range(1, N_y - 1):
+                r += R_list[k][N_x-2] * C[n][N_x-2, N_x-1] + R_list[k][N_x-1] * C[n][N_x-1, N_x-1]
+                s += S_list[k][j-1] * D[n][j, j-1] + S_list[k][j] * D[n][j, j] + S_list[k][j+1] * D[n][j, j+1]
+                result += U[K(N_x-1, j, N_y)] * r * s
+                r = 0
+                s = 0
+
+
+            for i in range(1, N_x - 1):
+                r += R_list[k][i-1] * C[n][i, i-1] + R_list[k][i] * C[n][i, i] + R_list[k][i+1] * C[n][i, i+1]
+                s += S_list[k][0] * D[n][0, 0] + S_list[k][1] * D[n][1, 0] + S_list[k][N_y-1] * D[n][0, N_y-1]
+                result += U[K(i, 0, N_y)] * r * s
+                r = 0
+                s = 0
+
+            r += R_list[k][0] * C[n][0, 0] + R_list[k][1] * C[n][0, 1]
+            s += S_list[k][0] * D[n][0, 0] + S_list[k][1] * D[n][1, 0] + S_list[k][N_y-1] * D[n][0, N_y-1]
+            result += U[K(0, 0, N_y)] * r * s
+            r = 0
+            s = 0
+
+            r += R_list[k][N_x-2] * C[n][N_x-2, N_x-1] + R_list[k][N_x-1] * C[n][N_x-1, N_x-1]
+            s += S_list[k][0] * D[n][0, 0] + S_list[k][1] * D[n][1, 0] + S_list[k][N_y-1] * D[n][0, N_y-1]
+            result += U[K(N_x-1, 0, N_y)] * r * s
+            r = 0
+            s = 0
+
+
+            for i in range(1, N_x - 1):
+                r += R_list[k][i - 1] * C[n][i, i - 1] + R_list[k][i] * C[n][i, i] + R_list[k][i + 1] * C[n][i, i + 1]
+                s += S_list[k][N_y-1] * D[n][N_y-1, N_y-1] + S_list[k][N_y-2] * D[n][N_y-2, N_y-1] + S_list[k][0] * D[n][0, N_y - 1]
+                result += U[K(i, N_y-1, N_y)] * r * s
+                r = 0
+                s = 0
+
+            r += R_list[k][0] * C[n][0, 0] + R_list[k][1] * C[n][0, 1]
+            s += S_list[k][N_y-1] * D[n][N_y-1, N_y-1] + S_list[k][N_y-2] * D[n][N_y-2, N_y-1] + S_list[k][0] * D[n][0, N_y - 1]
+            result += U[K(0, N_y-1, N_y)] * r * s
+            r = 0
+            s = 0
+
+            r += R_list[k][N_x - 2] * C[n][N_x - 2, N_x - 1] + R_list[k][N_x - 1] * C[n][N_x - 1, N_x - 1]
+            s += S_list[k][N_y-1] * D[n][N_y-1, N_y-1] + S_list[k][N_y-2] * D[n][N_y-2, N_y-1] + S_list[k][0] * D[n][0, N_y - 1]
+            result += U[K(N_x - 1, N_y-1, N_y)] * r * s
+            r = 0
+            s = 0
+
+
     return result
 
 def error_energy_norm(U, R_list, S_list, C, D, N_x, N_y):
