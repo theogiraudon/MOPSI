@@ -98,17 +98,20 @@ def psi_spline(i, x, N):
         The spline function support equates to [x_{i-1}, x_{i+1}], where x_i is the
         ith node of the main mesh.
     """
-    if i < N:
+    if i > 0 and i < N:
         if x < t_x(i + 1, N) and x >= t_x(i, N):
             return g4((x - t_x(i, N)) / (t_x(i + 1, N) - t_x(i, N))) * (t_x(i + 1, N) - t_x(i, N))
         elif x < t_x(i, N) and x >= t_x(i - 1, N):
             return g3((x - t_x(i - 1, N)) / (t_x(i, N) - t_x(i - 1, N))) * (t_x(i, N) - t_x(i - 1, N))
         else:
             return 0
-    else:
+    elif i == 0:
         if x < t_x(1, N) and x >= 0:
             return g4(x / t_x(1, N)) * t_x(1, N)
-        elif x < 1 and x >= t_x(N - 1, N):
+        else:
+            return 0
+    elif i == N:
+        if x < 1 and x >= t_x(N - 1, N):
             return g3((x - t_x(N - 1, N)) / (1 - t_x(N - 1, N))) * (1 - t_x(N - 1, N))
         else:
             return 0
@@ -135,17 +138,20 @@ def psi_spline_prime(i, x, N):
         The spline function support equates to [x_{i-1}, x_{i+1}], where x_i is the
         ith node of the main mesh.
     """
-    if i < N:
+    if i > 0 and i < N:
         if x < t_x(i + 1, N) and x >= t_x(i, N):
             return g4_prime((x - t_x(i, N)) / (t_x(i + 1, N) - t_x(i, N)))
         elif x < t_x(i, N) and x >= t_x(i - 1, N):
             return g3_prime((x - t_x(i - 1, N)) / (t_x(i, N) - t_x(i - 1, N)))
         else:
             return 0
-    else:
+    elif i == 0:
         if x < t_x(1, N) and x >= 0:
             return g4_prime(x / t_x(1, N))
-        elif x <= 1 and x >= t_x(N - 1, N):
+        else:
+            return 0
+    elif i == N:
+        if x <= 1 and x >= t_x(N - 1, N):
             return g3_prime((x - t_x(N - 1, N)) / (1 - t_x(N - 1, N)))
         else:
             return 0

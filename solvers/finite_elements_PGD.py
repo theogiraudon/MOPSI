@@ -379,27 +379,27 @@ def error_energy_norm(U, R_list, S_list, C, D, N_x, N_y):
     return (U_P1_energy_norm_squared(U, C, D, N_x, N_y) + U_PGD_energy_norm_squared(R_list, S_list, C, D) -
             2 * U_P1_U_PGD_energy_norm_scalar_product(U, R_list, S_list, C, D, N_x, N_y)) ** (1 / 2)
 
-# --------------------- Draw PGD error graph --------------------------
-
-from time import time
-
-N = [n for n in range(3, 6, 1)]
-Y_log = []
-for n in N:
-    print(n)
-    C = assemble_C(n, P)
-    D = assemble_D(n+1, P)
-    F_1 = assemble_F_1(n, P)
-    F_2 = assemble_F_2(n+1, P)
-    U = assemble_U(n, n+1, P)
-    t0 = time()
-    R_list, S_list = PGD(n, n+1)
-    print('Time to do R and S : ', time() - t0)
-    t0 = time()
-    Y_log.append(np.log(error_energy_norm(U, R_list, S_list, C, D, n, n+1)))
-    print('Time to do the error: ', time() - t0)
-
-plt.plot(-np.log(N), Y_log, color='r')
-plt.xlabel('log of the step')
-plt.ylabel('log of the error')
-plt.show()
+# # --------------------- Draw PGD error graph --------------------------
+#
+# from time import time
+#
+# N = [n for n in range(3, 6, 1)]
+# Y_log = []
+# for n in N:
+#     print(n)
+#     C = assemble_C(n, P)
+#     D = assemble_D(n+1, P)
+#     F_1 = assemble_F_1(n, P)
+#     F_2 = assemble_F_2(n+1, P)
+#     U = assemble_U(n, n+1, P)
+#     t0 = time()
+#     R_list, S_list = PGD(n, n+1)
+#     print('Time to do R and S : ', time() - t0)
+#     t0 = time()
+#     Y_log.append(np.log(error_energy_norm(U, R_list, S_list, C, D, n, n+1)))
+#     print('Time to do the error: ', time() - t0)
+#
+# plt.plot(-np.log(N), Y_log, color='r')
+# plt.xlabel('log of the step')
+# plt.ylabel('log of the error')
+# plt.show()
