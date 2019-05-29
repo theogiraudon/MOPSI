@@ -5,7 +5,8 @@ from time import time
 
 from solvers.finite_elements_1d_hat import assemble_U, approximate_derivative
 from solvers.finite_elements_1d_spline import assemble_U_spline, approximate_derivative_spline
-from solvers.finite_elements_2d import assemble_U, approximate_derivative_2D
+from solvers.finite_elements_2d import assemble_U_2D, approximate_derivative_2D
+from solvers.finite_elements_PGD import approximate_U_PGD, approximate_U_derivative_PGD, PGD
 from solvers.compute_analytic import analytic_derivative
 from core.parameters import N_max, P_max, P_error, N, P
 from core.error import L2_norm
@@ -21,34 +22,38 @@ def L2_relative_derivative_error(ef, begin, end, N0, P0, U, derivative_values):
         derivative_gap = lambda x : loaded_analytic_derivative(x) - approximate_derivative_spline(x, U, N0)
     elif ef == '2D':
         derivative_gap = lambda x : loaded_analytic_derivative(x) - approximate_derivative_2D(x, np.log(x), U, N0, N0+1)
-    return L2_norm(derivative_gap, begin, end, N0, P0) / L2_norm(loaded_analytic_derivative, begin, end, N0, P0)
+    return L2_norm(derivative_gap, begin, end) / L2_norm(loaded_analytic_derivative, begin, end)
 
 
 # We only display the derivative error
-def display_errors(ef, var='N'):
+def display_errors(ef, alpha, end, var='N'):
+    """
+    :param ef: name of the method
+    :param alpha: coefficient in the exponential used to generate the list of N
+    :param end: parameter that limit N
+    :param var: 'N' or 'P', variable from which we plot the error as a function of
+    """
     fig = plt.figure()
     p_list = range(4) # Errors will be displayed in the [0, e^{-p}] interval.
 
     if var=='N':
-        nb_N = 30
 
-        N_list = [int(np.exp(0.24*k)) + 4 for k in range(3, nb_N + 1)]
-        print(max(N_list))
+        N_list = [int(np.exp(alpha*k)) + 4 for k in range(3, end + 1)]
         N_list = np.sort(list(set(N_list))) # We remove the repetition of N
         N_list = [int(N_index) for N_index in N_list] # We transform the list of float in a list of int
-        print(N_list)
+        print("List of N : ", N_list)
         # Assemble U with increasing values of N.
         U_list = []
         for N_index in N_list:
-            t1 = time()
+            t0 = time()
             if ef == 'hat':
                 U = assemble_U(N_index, P)
             elif ef == 'spline':
                 U = assemble_U_spline(N_index, P)
             elif ef == '2D':
-                U = assemble_U(N_index, N_index + 1, P)
-            t2 = time()
-            print("U computation time (N = {}, P = {}) : {} seconds".format(N_index, P, t2 - t1),flush=True)
+                U = assemble_U_2D(N_index, N_index + 1, P)
+            # Uncomment to see the computation time of U
+            # print("U computation time (N = {}, P = {}) : {} seconds".format(N_index, P, time() - t0),flush=True)
             U_list.append(U)
 
         print("Loading analytic derivative values...", end="",flush=True)
@@ -70,7 +75,8 @@ def display_errors(ef, var='N'):
                     )
                 )
                 t2 = time()
-                print("Error computation time (N = {}, P = {}) : {} seconds".format(N_list[N_index], P, t2 - t1), flush=True)
+                # Uncomment to see the error computation time
+                # print("Error computation time (N = {}, P = {}, p = {}) : {} seconds".format(N_list[N_index], P, p, t2 - t1), flush=True)
             print("Error display interval : [0, e^-{}]".format(p))
             H = [-np.log(n+1) for n in N_list]
             plt.plot(H, np.log(L2_relative_derivative_errors))
@@ -98,7 +104,7 @@ def display_errors(ef, var='N'):
             elif ef == 'spline':
                 U = assemble_U_spline(N, P_index)
             elif ef == '2D':
-                U = assemble_U(N, N + 1, P_index)
+                U = assemble_U_2D(N, N + 1, P_index)
             t2 = time()
             print("Computation time (N = {}, P = {}) : {} seconds".format(N, P_index, t2 - t1), flush=True)
             U_list.append(U)

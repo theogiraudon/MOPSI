@@ -91,7 +91,7 @@ def assemble_B(C, D, N_x, N_y):
 
     return B
 
-def assemble_U(N_x, N_y, P):
+def assemble_U_2D(N_x, N_y, P):
     C = assemble_C(N_x, P)
     D = assemble_D(N_y, P)
     B = assemble_B(C, D, N_x, N_y)

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 def t_x(i, N):
     '''
-    ith node of the main mesh.
+    ith node of the mesh of the X axis.
     '''
     return i / N
 
@@ -121,8 +121,6 @@ def psi_spline(i, x, N):
 def phi_spline_prime(i, x, N):
     """
         Derivative of the ith phi spline function using N nodes in the main mesh.
-        The spline function support equates to [x_{i-1}, x_{i+1}], where x_i is the
-        ith node of the main mesh.
     """
     if x < t_x(i + 1, N) and x >= t_x(i, N):
         return g2_prime((x - t_x(i, N)) / (t_x(i + 1, N) - t_x(i, N))) / (t_x(i + 1, N) - t_x(i, N))
@@ -135,8 +133,6 @@ def phi_spline_prime(i, x, N):
 def psi_spline_prime(i, x, N):
     """
         Derivative of the ith psi spline function using N nodes in the main mesh.
-        The spline function support equates to [x_{i-1}, x_{i+1}], where x_i is the
-        ith node of the main mesh.
     """
     if i > 0 and i < N:
         if x < t_x(i + 1, N) and x >= t_x(i, N):
@@ -163,13 +159,20 @@ def psi_spline_prime(i, x, N):
 """
 
 def t_y(j, N_y):
+    '''
+    ith node of the mesh of the Y axis.
+    '''
     return j / N_y
 
 def K(i, j, N_y):
+    '''
+    Index that allows one to access the element at the i-th line and j-th column
+    of a matrix that has been converted to a vector.
+    '''
     return i*N_y + j
 
 
-# ---- fonctions chapeaux--------
+# ---- Hat functions and their derivatives used in the 2d method--------
 def phi2D(i, x, N_x):  # Defines phi_0 to phi_{N_x - 1}
     if x < t_x(i + 2, N_x) and x >= t_x(i + 1, N_x):
         return (t_x(i + 2, N_x) - x) / (t_x(i + 2, N_x) - t_x(i + 1, N_x))
@@ -223,6 +226,17 @@ def psi2D_prime(j, y, N_y):  # Defines psi'_0 to psi'_{N_y - 1}
 
 
 def tridiag(begin, end, t, g, h1, h2, N, P):
+    """
+    :param begin: first index
+    :param end: last index
+    :param t: step of the mesh
+    :param g: function, typically 1 or a(x)
+    :param h1: function
+    :param h2: function
+    :param N: size of the basis
+    :param P: number used for the integration
+    :return: a tridiagonal matrix
+    """
     main_diagonal = [
         rectangle_midpoints(
             lambda x: g(x) * h1(i, x, N) * h2(i, x, N),
@@ -260,7 +274,17 @@ def tridiag(begin, end, t, g, h1, h2, N, P):
 
 
 def tridiag2(begin, end, t, g, h1, h2, N, P):
-
+    """
+    :param begin: first index
+    :param end: last index
+    :param t: step of the mesh
+    :param g: function, typically 1 or a(x)
+    :param h1: function
+    :param h2: function
+    :param N: size of the basis
+    :param P: number used for the integration
+    :return: a tridiagonal matrix with two more coefficients at the bottom left and at the upper right
+    """
     main_diagonal = [
         rectangle_midpoints(
             lambda x: g(x) * h1(i, x, N) * h2(i, x, N),
@@ -331,7 +355,17 @@ def tridiag2(begin, end, t, g, h1, h2, N, P):
 
 
 def tridiag3(begin, end, t, g, h1, h2, N, P):
-
+    """
+    :param begin: first index
+    :param end: last index
+    :param t: step of the mesh
+    :param g: function, typically 1 or a(x)
+    :param h1: function
+    :param h2: function
+    :param N: size of the basis
+    :param P: number used for the integration
+    :return: a tridiagonal matrix with two more coefficients at the bottom left and at the upper right
+    """
     main_diagonal = [
         rectangle_midpoints(
             lambda x: g(x) * h1(i, x, N) * h2(i, x, N),
@@ -399,9 +433,3 @@ def tridiag3(begin, end, t, g, h1, h2, N, P):
     )
 
     return M
-
-
-X = np.linspace(0,1,1000)
-for i in range(6):
-    plt.plot(X, [psi_spline(i, x, 5) for x in X])
-plt.show()

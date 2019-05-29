@@ -11,12 +11,13 @@ import matplotlib.pyplot as plt
 import scipy
 from scipy.sparse import diags, csc_matrix
 from scipy.sparse.linalg import spsolve
+from time import time
 
 from core.finite_elements import tridiag, tridiag2
-from core.parameters import a, a_per, f, P, N_x, N_y, nb_iter, eps, max_rand_int
+from core.parameters import a, a_per, f, P, N_x, N_y, nb_iter, eps, max_rand_int, N_max, P_max
 from core.finite_elements import t_x, t_y, phi, phi2D, phi2D_prime, phi_prime, psi2D, psi2D_prime, K
 from core.integrate import rectangle_midpoints
-from solvers.finite_elements_2d import assemble_C, assemble_D, assemble_B, assemble_F, assemble_U, approximate_solution_2D, approximate_derivative_2D
+from solvers.finite_elements_2d import assemble_C, assemble_D, assemble_B, assemble_F, assemble_U_2D, approximate_solution_2D, approximate_derivative_2D
 
 
 np.set_printoptions(precision=4)  # pour joli affichage des matrices
@@ -164,7 +165,7 @@ def PGD(N_x, N_y, nb_iter=nb_iter, max_rand_int=max_rand_int):
     R_list = [np.zeros(N_x)]
     S_list = [np.zeros(N_y)]
     for n in range(nb_iter):
-        # print("PGD Iteration n°", n)
+        print("PGD Iteration n°", n)
         R_n, S_n = fixed_point(C, D, F_1, F_2, R_list, S_list, N_x, N_y, eps, max_rand_int)
         R_list += [R_n]
         S_list += [S_n]
@@ -201,88 +202,23 @@ def approximate_U_derivative_PGD(x, y, R_list, S_list, N_x, N_y, step=1.):
 
 # --------------------- Error computation --------------------------
 
+def coef(n, U, C, D, i, j, k, l):
+    return U[K(i, j, N_y)]*U[K(k, l, N_y)]*C[n][i,k]*D[n][j,l]
+
+
+
 def U_P1_energy_norm_squared(U, C, D, N_x, N_y):
     '''
        Return ||U_P1||_{energy}^2.
        There is probably a cleaner way to implement this, using matrix products.
     '''
     result = 0
-    for n in range(4):
-        for i in range(1, N_x-1):
-            for j in range(1, N_y-1):
-                result += (U[K(i, j, N_y)] * U[K(i-1, j-1, N_y)] * C[n][i,i-1] * D[n][j,j-1]
-                           + U[K(i, j, N_y)] * U[K(i, j-1, N_y)] * C[n][i,i] * D[n][j,j-1]
-                           + U[K(i, j, N_y)] * U[K(i+1, j-1, N_y)] * C[n][i,i+1] * D[n][j,j-1]
-                           + U[K(i, j, N_y)] * U[K(i-1, j, N_y)] * C[n][i,i-1] * D[n][j,j]
-                           + U[K(i, j, N_y)] * U[K(i, j, N_y)] * C[n][i,i] * D[n][j,j]
-                           + U[K(i, j, N_y)] * U[K(i+1, j, N_y)] * C[n][i,i+1] * D[n][j,j]
-                           + U[K(i, j, N_y)] * U[K(i-1, j+1, N_y)] * C[n][i,i-1] * D[n][j,j+1]
-                           + U[K(i, j, N_y)] * U[K(i, j+1, N_y)] * C[n][i,i] * D[n][j,j+1]
-                           + U[K(i, j, N_y)] * U[K(i+1, j+1, N_y)] * C[n][i,i+1] * D[n][j,j+1])
-
-            result += (U[K(i, 0, N_y)] * U[K(i-1, 0, N_y)] * C[n][i,i-1] * D[n][0,0]
-                           + U[K(i, 0, N_y)] * U[K(i, 0, N_y)] * C[n][i,i] * D[n][0,0]
-                           + U[K(i, 0, N_y)] * U[K(i+1, 0, N_y)] * C[n][i,i+1] * D[n][0,0]
-                           + U[K(i, 0, N_y)] * U[K(i-1, 1, N_y)] * C[n][i,i-1] * D[n][0,1]
-                           + U[K(i, 0, N_y)] * U[K(i, 1, N_y)] * C[n][i,i] * D[n][0,1]
-                           + U[K(i, 0, N_y)] * U[K(i+1, 1, N_y)] * C[n][i,i+1] * D[n][0,1]
-                           + U[K(i, 0, N_y)] * U[K(i - 1, N_y-1, N_y)] * C[n][i, i - 1] * D[n][0, N_y-1]
-                           + U[K(i, 0, N_y)] * U[K(i, N_y-1, N_y)] * C[n][i, i] * D[n][0, N_y-1]
-                           + U[K(i, 0, N_y)] * U[K(i + 1, N_y-1, N_y)] * C[n][i, i + 1] * D[n][0, N_y-1])
-
-            result += (U[K(i, N_y-1, N_y)] * U[K(i - 1, N_y-1, N_y)] * C[n][i, i - 1] * D[n][N_y-1, N_y-1]
-                           + U[K(i, N_y-1, N_y)] * U[K(i, N_y-1, N_y)] * C[n][i, i] * D[n][N_y-1, N_y-1]
-                           + U[K(i, N_y-1, N_y)] * U[K(i + 1, N_y-1, N_y)] * C[n][i, i + 1] * D[n][N_y-1, N_y-1]
-                           + U[K(i, N_y-1, N_y)] * U[K(i - 1, N_y-2, N_y)] * C[n][i, i - 1] * D[n][N_y-1, N_y-2]
-                           + U[K(i, N_y-1, N_y)] * U[K(i, N_y-2, N_y)] * C[n][i, i] * D[n][N_y-1, N_y-2]
-                           + U[K(i, N_y-1, N_y)] * U[K(i + 1, N_y-2, N_y)] * C[n][i, i + 1] * D[n][N_y-1, N_y-2]
-                           + U[K(i, N_y-1, N_y)] * U[K(i - 1, 0, N_y)] * C[n][i, i - 1] * D[n][N_y-1, 0]
-                           + U[K(i, N_y-1, N_y)] * U[K(i, 0, N_y)] * C[n][i, i] * D[n][N_y-1, 0]
-                           + U[K(i, N_y-1, N_y)] * U[K(i + 1, 0, N_y)] * C[n][i, i + 1] * D[n][N_y-1, 0])
-
-        for j in range(1, N_y-1):
-            result += (U[K(0, j, N_y)] * U[K(0, j-1, N_y)] * C[n][0,0] * D[n][j,j-1]
-                       + U[K(0, j, N_y)] * U[K(1, j-1, N_y)] * C[n][0,1] * D[n][j,j-1]
-                       + U[K(0, j, N_y)] * U[K(0, j, N_y)] * C[n][0,0] * D[n][j,j]
-                       + U[K(0, j, N_y)] * U[K(1, j, N_y)] * C[n][0,1] * D[n][j,j]
-                       + U[K(0, j, N_y)] * U[K(0, j+1, N_y)] * C[n][0,0] * D[n][j,j+1]
-                       + U[K(0, j, N_y)] * U[K(1, j+1, N_y)] * C[n][0,1] * D[n][j,j+1]
-                       + U[K(N_x-1, j, N_y)] * U[K(N_x-1, j-1, N_y)] * C[n][N_x-1,N_x-1] * D[n][j,j-1]
-                       + U[K(N_x-1, j, N_y)] * U[K(N_x-2, j-1, N_y)] * C[n][N_x-1,N_x-2] * D[n][j,j-1]
-                       + U[K(N_x-1, j, N_y)] * U[K(N_x-1, j, N_y)] * C[n][N_x-1,N_x-1] * D[n][j,j]
-                       + U[K(N_x-1, j, N_y)] * U[K(N_x-2, j, N_y)] * C[n][N_x-1,N_x-2] * D[n][j,j]
-                       + U[K(N_x-1, j, N_y)] * U[K(N_x-1, j+1, N_y)] * C[n][N_x-1,N_x-1] * D[n][j,j+1]
-                       + U[K(N_x-1, j, N_y)] * U[K(N_x-2, j+1, N_y)] * C[n][N_x-1,N_x-2] * D[n][j,j+1])
-
-        result += (U[K(0, 0, N_y)] * U[K(0, 0, N_y)] * C[n][0,0] * D[n][0,0]
-                   + U[K(0, 0, N_y)] * U[K(1, 0, N_y)] * C[n][0,1] * D[n][0,0]
-                   + U[K(0, 0, N_y)] * U[K(0, 1, N_y)] * C[n][0,0] * D[n][0,1]
-                   + U[K(0, 0, N_y)] * U[K(1, 1, N_y)] * C[n][0,1] * D[n][0,1]
-                   + U[K(0, N_y-1, N_y)] * U[K(0, N_y-1, N_y)] * C[n][0,0] * D[n][N_y-1,N_y-1]
-                   + U[K(0, N_y-1, N_y)] * U[K(1, N_y-1, N_y)] * C[n][0,1] * D[n][N_y-1,N_y-1]
-                   + U[K(0, N_y-1, N_y)] * U[K(0, N_y-2, N_y)] * C[n][0,0] * D[n][N_y-1,N_y-2]
-                   + U[K(0, N_y-1, N_y)] * U[K(1, N_y-2, N_y)] * C[n][0,1] * D[n][N_y-1,N_y-2]
-                   + U[K(0, 0, N_y)] * U[K(0, N_y-1, N_y)] * C[n][0,0] * D[n][0,N_y-1]
-                   + U[K(0, 0, N_y)] * U[K(1, N_y-1, N_y)] * C[n][0,1] * D[n][0,N_y-1]
-                   + U[K(0, N_y-1, N_y)] * U[K(0, 0, N_y)] * C[n][0,0] * D[n][N_y-1,0]
-                   + U[K(0, N_y-1, N_y)] * U[K(1, 0, N_y)] * C[n][0,1] * D[n][N_y-1,0]
-                   )
-
-        result += (U[K(N_x-1, 0, N_y)] * U[K(N_x-1, 0, N_y)] * C[n][N_x-1, N_x-1] * D[n][0, 0]
-                   + U[K(N_x-1, 0, N_y)] * U[K(N_x-2, 0, N_y)] * C[n][N_x-1, N_x-2] * D[n][0, 0]
-                   + U[K(N_x-1, 0, N_y)] * U[K(N_x-1, 1, N_y)] * C[n][N_x-1, N_x-1] * D[n][0, 1]
-                   + U[K(N_x-1, 0, N_y)] * U[K(N_x-2, 1, N_y)] * C[n][N_x-1, N_x-2] * D[n][0, 1]
-                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-1, N_y - 1, N_y)] * C[n][N_x-1, N_x-1] * D[n][N_y - 1, N_y - 1]
-                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-2, N_y - 1, N_y)] * C[n][N_x-1, N_x-2] * D[n][N_y - 1, N_y - 1]
-                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-1, N_y - 2, N_y)] * C[n][N_x-1, N_x-1] * D[n][N_y - 1, N_y - 2]
-                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-2, N_y - 2, N_y)] * C[n][N_x-1, N_x-2] * D[n][N_y - 1, N_y - 2]
-                   + U[K(N_x-1, 0, N_y)] * U[K(N_x-1, N_y - 1, N_y)] * C[n][N_x-1, N_x-1] * D[n][0, N_y - 1]
-                   + U[K(N_x-1, 0, N_y)] * U[K(N_x-2, N_y - 1, N_y)] * C[n][N_x-1, N_x-2] * D[n][0, N_y - 1]
-                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-1, 0, N_y)] * C[n][N_x-1, N_x-1] * D[n][N_y - 1, 0]
-                   + U[K(N_x-1, N_y - 1, N_y)] * U[K(N_x-2, 0, N_y)] * C[n][N_x-1, N_x-2] * D[n][N_y - 1, 0]
-                   )
-
-        return result
+    for i in range(N_x):
+        for j in range(N_y):
+            for k in range(N_x):
+                for l in range(N_y):
+                    result += U[K(i, j, N_y)] * U[K(k, l, N_y)] * sum([C[m][i,k] * D[m][j,l] for m in range(4)])
+    return result
 
 def U_PGD_energy_norm_squared(R_list, S_list, C, D):
     '''
@@ -303,71 +239,11 @@ def U_P1_U_PGD_energy_norm_scalar_product(U, R_list, S_list, C, D, N_x, N_y):
                          D[2] = Mat(int(aper * psi_i * psi_j')), D[3] = D_aper
     '''
     result = 0
-    r = 0
-    s = 0
-    for k in range(1, len(R_list)):
-        for n in range(4):
-            for i in range(1, N_x - 1):
-                for j in range(1, N_y - 1):
-                    r += R_list[k][i-1] * C[n][i, i-1] + R_list[k][i] * C[n][i, i] + R_list[k][i+1] * C[n][i, i+1]
-                    s += S_list[k][j-1] * D[n][j, j-1] + S_list[k][j] * D[n][j, j] + S_list[k][j+1] * D[n][j, j+1]
-                    result += U[K(i, j, N_y)] * r * s
-                    r = 0
-                    s = 0
-            for j in range(1, N_y - 1):
-                r += R_list[k][0] * C[n][0, 0] + R_list[k][1] * C[n][0, 1]
-                s += S_list[k][j-1] * D[n][j, j-1] + S_list[k][j] * D[n][j, j] + S_list[k][j+1] * D[n][j, j+1]
-                result += U[K(0, j, N_y)] * r * s
-                r = 0
-                s = 0
-            for j in range(1, N_y - 1):
-                r += R_list[k][N_x-2] * C[n][N_x-2, N_x-1] + R_list[k][N_x-1] * C[n][N_x-1, N_x-1]
-                s += S_list[k][j-1] * D[n][j, j-1] + S_list[k][j] * D[n][j, j] + S_list[k][j+1] * D[n][j, j+1]
-                result += U[K(N_x-1, j, N_y)] * r * s
-                r = 0
-                s = 0
-
-
-            for i in range(1, N_x - 1):
-                r += R_list[k][i-1] * C[n][i, i-1] + R_list[k][i] * C[n][i, i] + R_list[k][i+1] * C[n][i, i+1]
-                s += S_list[k][0] * D[n][0, 0] + S_list[k][1] * D[n][1, 0] + S_list[k][N_y-1] * D[n][0, N_y-1]
-                result += U[K(i, 0, N_y)] * r * s
-                r = 0
-                s = 0
-
-            r += R_list[k][0] * C[n][0, 0] + R_list[k][1] * C[n][0, 1]
-            s += S_list[k][0] * D[n][0, 0] + S_list[k][1] * D[n][1, 0] + S_list[k][N_y-1] * D[n][0, N_y-1]
-            result += U[K(0, 0, N_y)] * r * s
-            r = 0
-            s = 0
-
-            r += R_list[k][N_x-2] * C[n][N_x-2, N_x-1] + R_list[k][N_x-1] * C[n][N_x-1, N_x-1]
-            s += S_list[k][0] * D[n][0, 0] + S_list[k][1] * D[n][1, 0] + S_list[k][N_y-1] * D[n][0, N_y-1]
-            result += U[K(N_x-1, 0, N_y)] * r * s
-            r = 0
-            s = 0
-
-
-            for i in range(1, N_x - 1):
-                r += R_list[k][i - 1] * C[n][i, i - 1] + R_list[k][i] * C[n][i, i] + R_list[k][i + 1] * C[n][i, i + 1]
-                s += S_list[k][N_y-1] * D[n][N_y-1, N_y-1] + S_list[k][N_y-2] * D[n][N_y-2, N_y-1] + S_list[k][0] * D[n][0, N_y - 1]
-                result += U[K(i, N_y-1, N_y)] * r * s
-                r = 0
-                s = 0
-
-            r += R_list[k][0] * C[n][0, 0] + R_list[k][1] * C[n][0, 1]
-            s += S_list[k][N_y-1] * D[n][N_y-1, N_y-1] + S_list[k][N_y-2] * D[n][N_y-2, N_y-1] + S_list[k][0] * D[n][0, N_y - 1]
-            result += U[K(0, N_y-1, N_y)] * r * s
-            r = 0
-            s = 0
-
-            r += R_list[k][N_x - 2] * C[n][N_x - 2, N_x - 1] + R_list[k][N_x - 1] * C[n][N_x - 1, N_x - 1]
-            s += S_list[k][N_y-1] * D[n][N_y-1, N_y-1] + S_list[k][N_y-2] * D[n][N_y-2, N_y-1] + S_list[k][0] * D[n][0, N_y - 1]
-            result += U[K(N_x - 1, N_y-1, N_y)] * r * s
-            r = 0
-            s = 0
-
-
+    for i in range(N_x):
+        for j in range(N_y):
+            for k in range(1, len(R_list)):
+                result += U[K(i, j, N_y)] * sum([sum([R_list[k][l] * C[n][i,l] for l in range(N_x)]) *
+                                                 sum([S_list[k][m] * D[n][j,m] for m in range(N_y)]) for n in range(4)])
     return result
 
 def error_energy_norm(U, R_list, S_list, C, D, N_x, N_y):
@@ -379,27 +255,36 @@ def error_energy_norm(U, R_list, S_list, C, D, N_x, N_y):
     return (U_P1_energy_norm_squared(U, C, D, N_x, N_y) + U_PGD_energy_norm_squared(R_list, S_list, C, D) -
             2 * U_P1_U_PGD_energy_norm_scalar_product(U, R_list, S_list, C, D, N_x, N_y)) ** (1 / 2)
 
-# # --------------------- Draw PGD error graph --------------------------
-#
-# from time import time
-#
-# N = [n for n in range(3, 6, 1)]
-# Y_log = []
-# for n in N:
-#     print(n)
-#     C = assemble_C(n, P)
-#     D = assemble_D(n+1, P)
-#     F_1 = assemble_F_1(n, P)
-#     F_2 = assemble_F_2(n+1, P)
-#     U = assemble_U(n, n+1, P)
-#     t0 = time()
-#     R_list, S_list = PGD(n, n+1)
-#     print('Time to do R and S : ', time() - t0)
-#     t0 = time()
-#     Y_log.append(np.log(error_energy_norm(U, R_list, S_list, C, D, n, n+1)))
-#     print('Time to do the error: ', time() - t0)
-#
-# plt.plot(-np.log(N), Y_log, color='r')
-# plt.xlabel('log of the step')
-# plt.ylabel('log of the error')
-# plt.show()
+# --------------------- Draw PGD error graph --------------------------
+
+def display_errors_PGD(start, stop, step):
+    """
+    :param start: first n (n is the number of iterations in the PGD method)
+    :param stop: last n
+    :param step: step between the different values of n
+    """
+    n_list = range(start, stop, step)
+    t0 = time()
+    print("Computing U...")
+    C = assemble_C(N_x, P)
+    D = assemble_D(N_y, P)
+    U = assemble_U_2D(N_x, N_y, P)
+    print("U computation time (N_x = {}, N_y = {}, P = {}) : {} seconds".format(N_x, N_y, P, time() - t0), flush=True)
+
+    Y_log = []
+    for n in n_list:
+        t0 = time()
+        R_list, S_list = PGD(N_x, N_y, nb_iter=n)
+        print("R and S computation time (n = {}) : {} seconds".format(n, time() - t0), flush=True)
+        t0 = time()
+        Y_log.append(np.log(error_energy_norm(U, R_list, S_list, C, D, N_x, N_y)))
+        print('Time to do the error: ', time() - t0)
+
+    plt.plot(np.log(n_list), Y_log, color='r')
+    plt.xlabel('log of the number of iterations')
+    plt.ylabel('log of the energy error')
+    plt.show()
+
+
+
+

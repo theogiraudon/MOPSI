@@ -4,13 +4,13 @@ from time import time
 
 from solvers.finite_elements_1d_hat import assemble_U, approximate_solution, approximate_derivative
 from solvers.finite_elements_1d_spline import assemble_U_spline, approximate_solution_spline, approximate_derivative_spline
-from solvers.finite_elements_2d import assemble_U, approximate_solution_2D, approximate_derivative_2D
+from solvers.finite_elements_2d import assemble_U_2D, approximate_solution_2D, approximate_derivative_2D
 from solvers.finite_elements_PGD import approximate_U_PGD, approximate_U_derivative_PGD, PGD
 from solvers.compute_analytic import analytic_derivative, analytic_solution
 from core.parameters import N_max, P_max, N, N_x, N_y, P
 
 
-def display(ef, begin=0, end=0, solution=True, derivative=True):
+def display(ef, begin=0, end=1, solution=True, derivative=True):
     if solution or derivative:
         t0 = time()
         print("Assembling the matrix U...")
@@ -19,7 +19,7 @@ def display(ef, begin=0, end=0, solution=True, derivative=True):
         elif ef=='spline':
             U = assemble_U_spline(N, P)
         elif ef=='2D':
-            U = assemble_U(N_x, N_y, P)
+            U = assemble_U_2D(N_x, N_y, P)
         elif ef=='PGD':
             R_list1, S_list1 = PGD(N_x, N_y)
 
@@ -46,7 +46,7 @@ def display(ef, begin=0, end=0, solution=True, derivative=True):
             print("Loading analytic derivative values...", end="")
             derivative_values = np.load("data/analytic_derivative_{}_{}.npy".format(N_max, P_max))
             print("Loaded")
-            X = np.linspace(begin, end, 3000, endpoint=False)
+            X = np.linspace(begin, end, 1000, endpoint=False)
             plt.plot(X, [analytic_derivative(x, derivative_values) for x in X])
             t0 = time()
             if ef == 'hat':
