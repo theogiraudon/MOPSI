@@ -18,7 +18,6 @@ def rectangle_midpoints(h, begin, end, N, P):
     :param N:     Number of intervals in [0, 1].
     :param P:     Number of sub-intervals in each interval.
     '''
-    result = 0
     step = 1 / (N * P) # Step of the mesh.
     if begin < 0:
         begin = 0

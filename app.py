@@ -4,7 +4,7 @@ from displayers.display_errors import display_errors
 from solvers.finite_elements_PGD import display_errors_PGD
 
 # Don't uncomment the following line unless you want to generate again the analytic_derivative_N_max_P_max.npy file
-# containing the analytic derivative. The .npy is creating inside the "data" folder. The computation of the
+# containing the analytic derivative. The .npy is created inside the "data" folder. The computation of the
 # analytic solution is much longer than the analytic derivative because it involves much more integration.
 
 # compute_analytic(solution=False, derivative=True)
@@ -29,7 +29,7 @@ from solvers.finite_elements_PGD import display_errors_PGD
 # display_errors('2D', 0.22, 15, var='N')
 
 
-# The following function displays the log error in [0,1] as a function of the number of n of iterations for the PGD
+# The following function displays the log error in [0,1] as a function of the number n of iterations for the PGD
 # method. You can specify the first n, the last n and the step between the n.
 
 # display_errors_PGD(2,20,2)

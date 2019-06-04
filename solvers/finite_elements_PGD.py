@@ -278,7 +278,7 @@ def display_errors_PGD(start, stop, step):
         print("R and S computation time (n = {}) : {} seconds".format(n, time() - t0), flush=True)
         t0 = time()
         Y_log.append(np.log(error_energy_norm(U, R_list, S_list, C, D, N_x, N_y)))
-        print('Time to do the error: ', time() - t0)
+        print('Time to compute the error: ', time() - t0)
 
     plt.plot(np.log(n_list), Y_log, color='r')
     plt.xlabel('log of the number of iterations')
