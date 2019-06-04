@@ -19,7 +19,6 @@ def f(x):
 
 N_max = 10000       # Number of intervals in the mesh used to compute the analytic solution
 P_max = 500         # Number of sub intervals in each interval used to compute the analytic solution
-P_error = 5 * P_max # This is never used!
 N = 20   # Number of intervals in the 1D mesh
 N_x = 10 # Number of X axis intervals in the 2D mesh
 N_y = 11 # Number of Y axis intervals in the 2D mesh
