@@ -8,7 +8,7 @@ from solvers.finite_elements_1d_spline import assemble_U_spline, approximate_der
 from solvers.finite_elements_2d import assemble_U_2D, approximate_derivative_2D
 from solvers.finite_elements_PGD import approximate_U_PGD, approximate_U_derivative_PGD, PGD
 from solvers.compute_analytic import analytic_derivative
-from core.parameters import N_max, P_max, P_error, N, P
+from core.parameters import N_max, P_max, N, P
 from core.error import L2_norm
 
 print("Number of main mesh intervals (analytic) : N_max = {}".format(N_max))
